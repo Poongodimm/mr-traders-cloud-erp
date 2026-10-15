@@ -15,12 +15,85 @@
 </head>
 <body class="min-h-screen flex flex-col">
 
+  <!-- AUTH / LOGIN OVERLAY MODAL -->
+  <div id="loginScreen" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white max-w-md w-full p-8 rounded-2xl shadow-2xl border border-gray-100 space-y-6">
+      <div class="text-center space-y-2">
+        <div class="w-12 h-12 rounded-xl bg-indigo-600 text-white mx-auto flex items-center justify-center text-xl shadow-lg shadow-indigo-200">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-900 tracking-tight">RSP POS Authentication</h2>
+        <p class="text-xs text-gray-500">Reverie Synaptic Pulse Node V3.0 — MR Traders</p>
+      </div>
+
+      <form onsubmit="handleLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">Select User Account</label>
+          <select id="loginUserSelect" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="admin">Super Admin — mrtraders3355@gmail.com</option>
+            <option value="worker">Worker — arundon1002@gmail.com</option>
+            <option value="auditor">Auditor — auditor@mrtraders.com</option>
+          </select>
+        </div>
+
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label class="block text-xs font-semibold text-gray-700">Security PIN / Password</label>
+            <button type="button" onclick="openForgotModal()" class="text-[11px] text-indigo-600 hover:underline">Forgot Pin?</button>
+          </div>
+          <input type="password" id="loginPin" required placeholder="Enter PIN (Default: 1234)" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+
+        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-lg text-sm shadow-md transition">
+          <i class="fa-solid fa-right-to-bracket mr-2"></i>Sign In & Access Terminal
+        </button>
+      </form>
+      <p class="text-[11px] text-gray-400 text-center font-mono">Demo PIN for all accounts: <span class="text-indigo-600 font-bold">1234</span></p>
+    </div>
+  </div>
+
+  <!-- FORGOT PIN MODAL -->
+  <div id="forgotModal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white max-w-sm w-full p-6 rounded-2xl border border-gray-100 space-y-4 shadow-xl">
+      <h3 class="font-bold text-gray-900 text-lg">Reset PIN via Email OTP</h3>
+      <p class="text-xs text-gray-500">Enter your registered email address to receive a confirmation OTP code.</p>
+      
+      <div class="space-y-3">
+        <input type="email" id="forgotEmailInput" placeholder="Enter registered email..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none">
+        <div id="otpSection" class="hidden space-y-2">
+          <input type="text" id="otpCodeInput" placeholder="Enter 4-digit OTP" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 font-mono tracking-widest text-center">
+          <input type="password" id="resetNewPassInput" placeholder="Enter New PIN Password" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900">
+        </div>
+      </div>
+
+      <div class="flex gap-2">
+        <button id="forgotActionBtn" onclick="requestOtp()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg text-xs transition">Send Confirmation OTP</button>
+        <button onclick="closeForgotModal()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-xs">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHANGE PIN MODAL -->
+  <div id="changePassModal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white max-w-sm w-full p-6 rounded-2xl border border-gray-100 space-y-4 shadow-xl">
+      <h3 class="font-bold text-gray-900 text-lg">Change Security PIN</h3>
+      <div class="space-y-3">
+        <input type="password" id="currentPassInput" placeholder="Current PIN" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none">
+        <input type="password" id="newPassInput" placeholder="New PIN" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none">
+      </div>
+      <div class="flex gap-2">
+        <button onclick="submitChangePassword()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg text-xs">Update PIN</button>
+        <button onclick="closeChangePassModal()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-xs">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <!-- TOP HEADER BAR -->
-  <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
+  <header class="bg-white border-b border-gray-200 sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-4 py-2.5 flex justify-between items-center">
       <div class="flex items-center space-x-6">
         <div class="flex items-center space-x-2 font-bold text-gray-900 text-lg">
-          <div class="w-8 h-8 rounded bg-slate-900 text-white flex items-center justify-center text-sm">
+          <div class="w-8 h-8 rounded bg-indigo-600 text-white flex items-center justify-center text-sm shadow">
             <i class="fa-solid fa-bolt"></i>
           </div>
           <span>RSP POS</span>
@@ -46,10 +119,18 @@
         </nav>
       </div>
 
-      <!-- User Staff & Logout -->
-      <div class="flex items-center space-x-4 text-sm">
-        <span class="text-gray-600">Staff: <strong class="text-gray-900" id="staffNameDisplay">Arunkumar</strong></span>
-        <button onclick="logout()" class="text-red-600 hover:text-red-700 font-medium flex items-center gap-1">
+      <!-- User Info & Action Controls -->
+      <div class="flex items-center space-x-3 text-sm">
+        <div class="text-right leading-tight hidden sm:block">
+          <div class="text-xs text-gray-500">Staff: <strong class="text-gray-900" id="staffNameDisplay">Super Admin</strong></div>
+          <div class="text-[10px] font-mono text-indigo-600" id="staffRoleDisplay">mrtraders3355@gmail.com</div>
+        </div>
+
+        <button onclick="openChangePassModal()" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2.5 py-1.5 rounded-lg font-medium transition flex items-center gap-1">
+          <i class="fa-solid fa-key text-indigo-600"></i> PIN
+        </button>
+
+        <button onclick="logout()" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1">
           <i class="fa-solid fa-right-from-bracket"></i> Logout
         </button>
       </div>
@@ -62,8 +143,8 @@
     <!-- 1. DASHBOARD VIEW -->
     <div id="view-dashboard" class="space-y-6">
       <div>
-        <h2 class="text-2xl font-bold text-gray-900">Welcome, Arunkumar</h2>
-        <p class="text-sm text-gray-500">Ready for today's sales?</p>
+        <h2 class="text-2xl font-bold text-gray-900" id="welcomeHeading">Welcome, Super Admin</h2>
+        <p class="text-sm text-gray-500">Ready for today's sales operations?</p>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -73,14 +154,14 @@
             <div class="text-3xl font-bold text-gray-900 mt-1">₹0.00</div>
             <div class="text-xs text-gray-400 mt-1">0 bills generated today</div>
           </div>
-          <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-lg">
+          <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
             <i class="fa-solid fa-cart-shopping"></i>
           </div>
         </div>
 
         <div class="card-box rounded-xl p-5 md:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-4">
           <button onclick="showTab('pos')" class="text-left p-3 rounded-lg hover:bg-gray-50 border border-gray-100 transition">
-            <i class="fa-solid fa-cash-register text-blue-600 text-lg mb-2"></i>
+            <i class="fa-solid fa-cash-register text-indigo-600 text-lg mb-2"></i>
             <div class="font-bold text-sm text-gray-900">Start POS Billing</div>
             <div class="text-[11px] text-gray-500">Scan items and receipts</div>
           </button>
@@ -120,8 +201,8 @@
               <span class="font-mono text-gray-500">USB / Bluetooth / HID</span>
             </div>
             <div class="flex gap-2">
-              <input type="text" id="barcodeInput" placeholder="Scan barcode or type code & press Enter..." class="flex-grow bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
-              <button onclick="addItemByBarcode()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition">Add</button>
+              <input type="text" id="barcodeInput" placeholder="Scan barcode or type code & press Enter..." class="flex-grow bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-indigo-500">
+              <button onclick="addItemByBarcode()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition">Add</button>
             </div>
             <input type="text" id="posSearch" oninput="filterPosProducts()" placeholder="Search products by name..." class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-900 focus:outline-none">
           </div>
@@ -142,7 +223,7 @@
             <input type="text" placeholder="Enter 10-digit mobile number" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none">
           </div>
           <div class="flex rounded-lg border border-gray-300 p-0.5 bg-gray-50 text-xs font-medium text-center">
-            <button class="flex-1 py-1.5 rounded bg-blue-600 text-white shadow-sm">B2C Retail</button>
+            <button class="flex-1 py-1.5 rounded bg-indigo-600 text-white shadow-sm">B2C Retail</button>
             <button class="flex-1 py-1.5 text-gray-600 hover:text-gray-900">B2B Invoice</button>
           </div>
           <div class="space-y-2 pt-2 text-sm text-gray-600">
@@ -150,10 +231,10 @@
             <div class="flex justify-between"><span>CGST (0%)</span><span>₹0.00</span></div>
             <div class="flex justify-between"><span>SGST (0%)</span><span>₹0.00</span></div>
             <div class="flex justify-between items-center pt-2 border-t border-gray-200 text-base font-bold text-gray-900">
-              <span>Total</span><span id="posGrandTotal" class="text-blue-600">₹0.00</span>
+              <span>Total</span><span id="posGrandTotal" class="text-indigo-600">₹0.00</span>
             </div>
           </div>
-          <button onclick="completeSale()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg text-sm transition">Complete Sale & Print</button>
+          <button id="checkoutBtn" onclick="completeSale()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-lg text-sm transition">Complete Sale & Print</button>
         </div>
       </div>
     </div>
@@ -188,18 +269,34 @@
         </div>
       </div>
 
-      <!-- Search & Filters -->
-      <div class="card-box rounded-xl p-4 flex flex-col md:flex-row gap-3">
+      <!-- Action Toolbar -->
+      <div class="card-box rounded-xl p-4 flex flex-col md:flex-row gap-3 justify-between items-center">
         <input type="text" id="prodSearchInput" oninput="renderProductTable()" placeholder="Search name, SKU, HSN..." class="flex-grow border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none">
-        <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-600">
-          <option>All Categories</option>
-        </select>
-        <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-600">
-          <option>All GST</option>
-        </select>
-        <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-600">
-          <option>All Statuses</option>
-        </select>
+        
+        <div class="flex gap-2">
+          <button onclick="toggleAddForm()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
+            <i class="fa-solid fa-plus"></i> Add Product
+          </button>
+          <button id="bulkDeleteBtn" onclick="bulkDeleteSelected()" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
+            <i class="fa-solid fa-trash-can"></i> Delete Selected (<span id="selectedCount">0</span>)
+          </button>
+        </div>
+      </div>
+
+      <!-- Single Add Form -->
+      <div id="singleAddForm" class="hidden card-box rounded-xl p-4 space-y-4">
+        <h4 class="font-bold text-sm text-indigo-900">Add New Product to Catalog</h4>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+          <input type="text" id="newSku" placeholder="SKU (e.g. SKU-1016)" class="border border-gray-300 rounded-lg px-3 py-2 text-xs">
+          <input type="text" id="newName" placeholder="Product Name" class="border border-gray-300 rounded-lg px-3 py-2 text-xs">
+          <input type="text" id="newCat" placeholder="Category" class="border border-gray-300 rounded-lg px-3 py-2 text-xs">
+          <input type="number" id="newStock" placeholder="Stock Level" class="border border-gray-300 rounded-lg px-3 py-2 text-xs">
+          <input type="number" id="newPrice" placeholder="Price (₹)" class="border border-gray-300 rounded-lg px-3 py-2 text-xs">
+        </div>
+        <div class="flex justify-end gap-2">
+          <button onclick="addSingleProduct()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded-lg text-xs font-bold">Save Product</button>
+          <button onclick="toggleAddForm()" class="bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs">Cancel</button>
+        </div>
       </div>
 
       <!-- Product List Table -->
@@ -207,98 +304,4 @@
         <table class="w-full text-left text-sm text-gray-700">
           <thead class="bg-gray-50 border-b border-gray-200 text-xs font-semibold uppercase text-gray-500">
             <tr>
-              <th class="p-3.5">Product</th>
-              <th class="p-3.5">Category & HSN</th>
-              <th class="p-3.5">Price</th>
-              <th class="p-3.5">GST</th>
-              <th class="p-3.5">Stock</th>
-              <th class="p-3.5">Status</th>
-              <th class="p-3.5 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="productTableBody" class="divide-y divide-gray-100"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- 5. ONBOARD / SCAN VIEW -->
-    <div id="view-onboard" class="hidden space-y-6">
-      <div>
-        <h2 class="text-2xl font-bold text-gray-900">Barcode Onboarding</h2>
-        <p class="text-sm text-gray-500">Scan or enter barcodes to instantly onboard and lookup products in your inventory.</p>
-      </div>
-
-      <div class="card-box rounded-xl p-6">
-        <div class="h-64 bg-slate-900 rounded-xl flex flex-col items-center justify-center text-gray-400 space-y-2">
-          <i class="fa-solid fa-camera text-3xl"></i>
-          <p class="text-sm">Camera is inactive. Turn on to scan barcodes.</p>
-          <button class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-xs font-semibold">Start Camera</button>
-        </div>
-      </div>
-    </div>
-
-  </main>
-
-  <script>
-    let products = [
-      { id: 'SKU-1011', name: '10% Niacinamide Face Serum with 2% Zinc PCA - 30ml', category: 'Uncategorized', price: 699, gst: '18%', stock: 5, status: 'Low Stock' },
-      { id: 'SKU-1012', name: '10% Vitamin C & Calendula Barrier Boosting Glow Serum 30ml', category: 'Uncategorized', price: 799, gst: '18%', stock: 7, status: 'In Stock' },
-      { id: 'SKU-1013', name: '24 Carat Gold Cool Cream 200 g', category: 'Uncategorized', price: 230, gst: '18%', stock: 11, status: 'In Stock' },
-      { id: 'SKU-1014', name: '24K GOLD AYURVEDIC BATHING BAR & NIGHT CREAM', category: 'Uncategorized', price: 349, gst: '18%', stock: 2, status: 'Critical' },
-      { id: 'SKU-1015', name: '3 in 1 All Day Hydra Matte Mini Foundation Absolute Ivory 012', category: 'Uncategorized', price: 299, gst: '18%', stock: 2, status: 'Critical' }
-    ];
-
-    let cart = [];
-
-    function showTab(tab) {
-      ['dashboard', 'pos', 'history', 'products', 'onboard'].forEach(t => {
-        document.getElementById(`view-${t}`).classList.add('hidden');
-        document.getElementById(`tab-${t}`).classList.remove('active');
-      });
-      document.getElementById(`view-${tab}`).classList.remove('hidden');
-      document.getElementById(`tab-${tab}`).classList.add('active');
-      if(tab === 'products') renderProductTable();
-    }
-
-    function renderProductTable() {
-      const query = document.getElementById('prodSearchInput').value.toLowerCase();
-      const filtered = products.filter(p => p.name.toLowerCase().includes(query) || p.id.toLowerCase().includes(query));
-      
-      document.getElementById('productTableBody').innerHTML = filtered.map(p => `
-        <tr class="hover:bg-gray-50/50">
-          <td class="p-3.5">
-            <div class="font-semibold text-gray-900">${p.name}</div>
-            <div class="text-xs text-gray-400 font-mono">SKU: ${p.id}</div>
-          </td>
-          <td class="p-3.5 text-gray-600 text-xs">${p.category}</td>
-          <td class="p-3.5 font-mono">₹${p.price.toFixed(2)}</td>
-          <td class="p-3.5 text-xs text-gray-500">${p.gst} GST</td>
-          <td class="p-3.5 font-bold">${p.stock}</td>
-          <td class="p-3.5">
-            <span class="px-2.5 py-1 rounded-full text-xs font-medium ${p.status === 'In Stock' ? 'bg-emerald-50 text-emerald-600' : p.status === 'Low Stock' ? 'bg-amber-50 text-amber-600' : 'bg-red-500/10 text-red-600'}">${p.status}</span>
-          </td>
-          <td class="p-3.5 text-right space-x-2">
-            <button onclick="editProduct('${p.id}')" class="text-gray-400 hover:text-blue-600"><i class="fa-solid fa-pen"></i></button>
-            <button onclick="deleteProduct('${p.id}')" class="text-gray-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button>
-          </td>
-        </tr>
-      `).join('');
-    }
-
-    function deleteProduct(sku) {
-      if(confirm('Delete product ' + sku + '?')) {
-        products = products.filter(p => p.id !== sku);
-        renderProductTable();
-      }
-    }
-
-    function logout() {
-      if(confirm('Are you sure you want to log out?')) {
-        window.location.reload();
-      }
-    }
-
-    renderProductTable();
-  </script>
-</body>
-</html>
+              <th
