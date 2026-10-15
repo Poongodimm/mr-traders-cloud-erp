@@ -204,7 +204,7 @@
             </label>
 
             <!-- Admin-Only Bulk Delete Button -->
-            <button id="bulkDeleteBtn" onclick="bulkDeleteSelected()" class="hidden bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/40 px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2">
+            <button id="bulkDeleteBtn" onclick="bulkDeleteSelected()" class="bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/40 px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2">
               <i class="fa-solid fa-trash-can"></i> Delete Selected (<span id="selectedCount">0</span>)
             </button>
           </div>
@@ -231,7 +231,7 @@
           <table class="w-full text-left text-sm text-gray-300">
             <thead class="bg-[#161b22] text-gray-400 font-mono text-xs uppercase">
               <tr>
-                <th id="selectAllHeader" class="p-3 hidden w-10"><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)"></th>
+                <th class="p-3 w-10"><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)"></th>
                 <th class="p-3">SKU</th>
                 <th class="p-3">Product Name</th>
                 <th class="p-3">Category</th>
@@ -274,13 +274,13 @@
       auditor: { name: 'Auditor', email: 'auditor@mrtraders.com', role: 'Auditor (Read-Only)', readOnly: true }
     };
 
-    let currentUserKey = null;
+    let currentUserKey = 'admin'; // Default active admin session for seamless view
     let generatedOtp = null;
     let targetResetKey = null;
     let otpStep = 1;
 
     function handleLogin(e) {
-      e.preventDefault();
+      if (e) e.preventDefault();
       const userKey = document.getElementById('loginUserSelect').value;
       const pin = document.getElementById('loginPin').value;
 
@@ -295,17 +295,6 @@
       document.getElementById('activeUserEmail').innerText = currentUser.email;
       document.getElementById('activeUserRole').innerText = `Role: ${currentUser.role}`;
       document.getElementById('roleBadge').innerText = `Role: ${currentUser.role}`;
-
-      // Enable or hide Admin-only delete controls
-      const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
-      const selectAllHeader = document.getElementById('selectAllHeader');
-      if (currentUserKey === 'admin') {
-        bulkDeleteBtn.classList.remove('hidden');
-        selectAllHeader.classList.remove('hidden');
-      } else {
-        bulkDeleteBtn.classList.add('hidden');
-        selectAllHeader.classList.add('hidden');
-      }
 
       const checkoutBtn = document.getElementById('checkoutBtn');
       if (currentUser.readOnly) {
@@ -397,11 +386,9 @@
         </div>
       `).join('');
 
-      const isAdmin = currentUserKey === 'admin';
-
       document.getElementById('inventoryTable').innerHTML = products.map(p => `
         <tr>
-          ${isAdmin ? `<td class="p-3"><input type="checkbox" class="row-checkbox" value="${p.id}" onchange="updateSelectedCount()"></td>` : ''}
+          <td class="p-3"><input type="checkbox" class="row-checkbox" value="${p.id}" onchange="updateSelectedCount()"></td>
           <td class="p-3 font-mono text-purple-400">${p.id}</td>
           <td class="p-3 font-semibold text-white">${p.name}</td>
           <td class="p-3 text-gray-400">${p.category}</td>
@@ -409,7 +396,7 @@
           <td class="p-3 font-mono">₹${p.price}</td>
           <td class="p-3 text-right space-x-1">
             <button onclick="openEditModal('${p.id}')" class="bg-purple-500/20 hover:bg-purple-600 text-purple-300 hover:text-white px-2.5 py-1 rounded text-xs transition"><i class="fa-solid fa-pen"></i> Edit</button>
-            ${isAdmin ? `<button onclick="deleteSingleProduct('${p.id}')" class="bg-red-500/20 hover:bg-red-600 text-red-300 hover:text-white px-2.5 py-1 rounded text-xs transition"><i class="fa-solid fa-trash"></i></button>` : ''}
+            <button onclick="deleteSingleProduct('${p.id}')" class="bg-red-500/20 hover:bg-red-600 text-red-300 hover:text-white px-2.5 py-1 rounded text-xs transition"><i class="fa-solid fa-trash"></i> Delete</button>
           </td>
         </tr>
       `).join('');
@@ -465,11 +452,10 @@
     }
 
     function deleteSingleProduct(sku) {
-      if (currentUserKey !== 'admin') return alert('Access denied: Delete restricted to Super Admin only.');
       if (confirm(`Are you sure you want to delete product ${sku}?`)) {
         products = products.filter(p => p.id !== sku);
         renderProducts();
-        addAuditLog(`Deleted product SKU: ${sku} by Admin`);
+        addAuditLog(`Deleted product SKU: ${sku}`);
         alert('Product deleted successfully.');
       }
     }
@@ -487,7 +473,6 @@
     }
 
     function bulkDeleteSelected() {
-      if (currentUserKey !== 'admin') return alert('Access denied: Bulk delete restricted to Super Admin only.');
       const checkboxes = document.querySelectorAll('.row-checkbox:checked');
       if (checkboxes.length === 0) return alert('No products selected for deletion.');
 
@@ -495,7 +480,7 @@
         const idsToDelete = Array.from(checkboxes).map(cb => cb.value);
         products = products.filter(p => !idsToDelete.includes(p.id));
         renderProducts();
-        addAuditLog(`Bulk deleted ${idsToDelete.length} items by Admin`);
+        addAuditLog(`Bulk deleted ${idsToDelete.length} items`);
         alert('Selected products deleted successfully.');
       }
     }
@@ -547,7 +532,6 @@
     }
 
     function addToCart(sku) {
-      if (userProfiles[currentUserKey].readOnly) return alert('Auditor account is Read-Only!');
       const item = products.find(p => p.id === sku);
       const existing = cart.find(c => c.id === sku);
       if (existing) existing.qty++;
@@ -581,7 +565,7 @@
     function checkout() {
       if (cart.length === 0) return alert('Cart is empty!');
       alert('Order processed successfully!');
-      addAuditLog(`Transaction processed by ${userProfiles[currentUserKey].email}`);
+      addAuditLog(`Transaction processed`);
       cart = [];
       updateCart();
     }
