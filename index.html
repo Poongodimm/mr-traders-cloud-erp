@@ -39,7 +39,7 @@
         <div>
           <div class="flex justify-between items-center mb-1">
             <label class="block text-xs font-mono text-purple-300">Security PIN / Password</label>
-            <button type="button" onclick="openForgotModal()" class="text-[11px] text-purple-400 hover:underline">Forgot Password?</button>
+            <button type="button" onclick="openForgotModal()" class="text-[11px] text-purple-400 hover:underline">Forgot Pin / Password?</button>
           </div>
           <input type="password" id="loginPin" required placeholder="Enter PIN (Default: 1234)" class="w-full bg-[#161b22] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500">
         </div>
@@ -51,14 +51,22 @@
     </div>
   </div>
 
-  <!-- FORGOT PASSWORD MODAL -->
+  <!-- FORGOT PIN / PASSWORD MODAL WITH OTP -->
   <div id="forgotModal" class="fixed inset-0 z-50 bg-[#090d16]/90 backdrop-blur-md hidden flex items-center justify-center p-4">
     <div class="glass-card max-w-sm w-full p-6 rounded-2xl border border-purple-500/40 space-y-4">
-      <h3 class="font-bold text-white text-lg">Reset Password via OTP</h3>
-      <p class="text-xs text-gray-400">Enter your registered email address to receive a verification OTP code.</p>
-      <input type="email" id="forgotEmailInput" placeholder="Enter user email..." class="w-full bg-[#161b22] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none">
+      <h3 class="font-bold text-white text-lg">Reset PIN via Email OTP</h3>
+      <p class="text-xs text-gray-400">Enter your registered email (e.g. mrtraders3355@gmail.com) to trigger confirmation OTP.</p>
+      
+      <div class="space-y-3">
+        <input type="email" id="forgotEmailInput" placeholder="Enter registered email..." class="w-full bg-[#161b22] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none">
+        <div id="otpSection" class="hidden space-y-2">
+          <input type="text" id="otpCodeInput" placeholder="Enter 4-digit OTP" class="w-full bg-[#161b22] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono tracking-widest text-center">
+          <input type="password" id="resetNewPassInput" placeholder="Enter New PIN Password" class="w-full bg-[#161b22] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+        </div>
+      </div>
+
       <div class="flex gap-2">
-        <button onclick="sendOtp()" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded-lg text-xs">Send OTP</button>
+        <button id="forgotActionBtn" onclick="requestOtp()" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded-lg text-xs transition">Send Confirmation OTP</button>
         <button onclick="closeForgotModal()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-2 rounded-lg text-xs">Cancel</button>
       </div>
     </div>
@@ -218,6 +226,9 @@
     };
 
     let currentUserKey = null;
+    let generatedOtp = null;
+    let targetResetKey = null;
+    let otpStep = 1; // 1: Send OTP, 2: Verify & Reset
 
     function handleLogin(e) {
       e.preventDefault();
@@ -259,26 +270,49 @@
       }
     }
 
-    function openForgotModal() { document.getElementById('forgotModal').classList.remove('hidden'); }
-    function closeForgotModal() { document.getElementById('forgotModal').classList.add('hidden'); }
+    function openForgotModal() {
+      otpStep = 1;
+      document.getElementById('forgotEmailInput').value = 'mrtraders3355@gmail.com';
+      document.getElementById('otpSection').classList.add('hidden');
+      document.getElementById('forgotActionBtn').innerText = 'Send Confirmation OTP';
+      document.getElementById('forgotModal').classList.remove('hidden');
+    }
 
-    function sendOtp() {
-      const email = document.getElementById('forgotEmailInput').value;
+    function closeForgotModal() {
+      document.getElementById('forgotModal').classList.add('hidden');
+    }
+
+    function requestOtp() {
+      const email = document.getElementById('forgotEmailInput').value.trim();
       if (!email) return alert('Please enter your email address.');
-      
-      const matchedKey = Object.keys(userProfiles).find(k => userProfiles[k].email === email);
-      if (!matchedKey) return alert('Email address not recognized in ERP directory.');
 
-      const otp = Math.floor(1000 + Math.random() * 9000);
-      const newPin = prompt(`[SIMULATED OTP SENT TO ${email}]\nYour Verification OTP is: ${otp}\n\nEnter this 4-digit OTP code to reset your password:`);
-      
-      if (newPin) {
-        const temporaryPass = prompt('OTP verified successfully!\nEnter your new secure PIN password:');
-        if (temporaryPass) {
-          userPasswords[matchedKey] = temporaryPass;
-          alert('Password successfully reset! You can now log in with your new PIN.');
-          closeForgotModal();
+      targetResetKey = Object.keys(userProfiles).find(k => userProfiles[k].email === email);
+      if (!targetResetKey) {
+        return alert('Email address not found in system directory.');
+      }
+
+      if (otpStep === 1) {
+        generatedOtp = Math.floor(1000 + Math.random() * 9000);
+        alert(`[SIMULATED EMAIL SENT TO ${email}]\nConfirmation OTP Code: ${generatedOtp}`);
+        
+        document.getElementById('otpSection').classList.remove('hidden');
+        document.getElementById('forgotActionBtn').innerText = 'Verify & Confirm Reset';
+        otpStep = 2;
+      } else {
+        const enteredOtp = document.getElementById('otpCodeInput').value.trim();
+        const newPass = document.getElementById('resetNewPassInput').value.trim();
+
+        if (enteredOtp !== generatedOtp.toString()) {
+          return alert('Invalid OTP code entered!');
         }
+        if (!newPass || newPass.length < 4) {
+          return alert('Please enter a new PIN of at least 4 characters.');
+        }
+
+        userPasswords[targetResetKey] = newPass;
+        alert(`Password for ${email} has been successfully reset! You can now login with your new PIN.`);
+        addAuditLog(`Password reset via OTP confirmation for ${email}`);
+        closeForgotModal();
       }
     }
 
