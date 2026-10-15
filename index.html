@@ -194,16 +194,19 @@
           <h3 class="font-bold text-white text-lg"><i class="fa-solid fa-boxes-stacked text-indigo-400 mr-2"></i>Stock Inventory Management</h3>
           
           <div class="flex flex-wrap gap-2">
-            <!-- Single Product Add Button / Toggle -->
             <button onclick="toggleAddForm()" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2">
               <i class="fa-solid fa-plus"></i> Add Single Product
             </button>
             
-            <!-- Bulk Upload Button -->
             <label class="bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/40 px-3 py-2 rounded-lg text-xs font-bold cursor-pointer transition flex items-center gap-2">
               <i class="fa-solid fa-file-arrow-up"></i> Bulk CSV Upload
               <input type="file" id="bulkFile" accept=".csv,.json" onchange="handleBulkUpload(event)" class="hidden">
             </label>
+
+            <!-- Admin-Only Bulk Delete Button -->
+            <button id="bulkDeleteBtn" onclick="bulkDeleteSelected()" class="hidden bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/40 px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2">
+              <i class="fa-solid fa-trash-can"></i> Delete Selected (<span id="selectedCount">0</span>)
+            </button>
           </div>
         </div>
 
@@ -228,6 +231,7 @@
           <table class="w-full text-left text-sm text-gray-300">
             <thead class="bg-[#161b22] text-gray-400 font-mono text-xs uppercase">
               <tr>
+                <th id="selectAllHeader" class="p-3 hidden w-10"><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)"></th>
                 <th class="p-3">SKU</th>
                 <th class="p-3">Product Name</th>
                 <th class="p-3">Category</th>
@@ -292,6 +296,17 @@
       document.getElementById('activeUserRole').innerText = `Role: ${currentUser.role}`;
       document.getElementById('roleBadge').innerText = `Role: ${currentUser.role}`;
 
+      // Enable or hide Admin-only delete controls
+      const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+      const selectAllHeader = document.getElementById('selectAllHeader');
+      if (currentUserKey === 'admin') {
+        bulkDeleteBtn.classList.remove('hidden');
+        selectAllHeader.classList.remove('hidden');
+      } else {
+        bulkDeleteBtn.classList.add('hidden');
+        selectAllHeader.classList.add('hidden');
+      }
+
       const checkoutBtn = document.getElementById('checkoutBtn');
       if (currentUser.readOnly) {
         checkoutBtn.disabled = true;
@@ -303,6 +318,7 @@
         checkoutBtn.classList.remove('opacity-50', 'cursor-not-allowed');
       }
 
+      renderProducts();
       addAuditLog(`User logged in: ${currentUser.email} (${currentUser.role})`);
     }
 
@@ -381,23 +397,27 @@
         </div>
       `).join('');
 
+      const isAdmin = currentUserKey === 'admin';
+
       document.getElementById('inventoryTable').innerHTML = products.map(p => `
         <tr>
+          ${isAdmin ? `<td class="p-3"><input type="checkbox" class="row-checkbox" value="${p.id}" onchange="updateSelectedCount()"></td>` : ''}
           <td class="p-3 font-mono text-purple-400">${p.id}</td>
           <td class="p-3 font-semibold text-white">${p.name}</td>
           <td class="p-3 text-gray-400">${p.category}</td>
           <td class="p-3 font-bold ${p.stock < 80 ? 'text-amber-400' : 'text-emerald-400'}">${p.stock} units</td>
           <td class="p-3 font-mono">₹${p.price}</td>
-          <td class="p-3 text-right">
+          <td class="p-3 text-right space-x-1">
             <button onclick="openEditModal('${p.id}')" class="bg-purple-500/20 hover:bg-purple-600 text-purple-300 hover:text-white px-2.5 py-1 rounded text-xs transition"><i class="fa-solid fa-pen"></i> Edit</button>
+            ${isAdmin ? `<button onclick="deleteSingleProduct('${p.id}')" class="bg-red-500/20 hover:bg-red-600 text-red-300 hover:text-white px-2.5 py-1 rounded text-xs transition"><i class="fa-solid fa-trash"></i></button>` : ''}
           </td>
         </tr>
       `).join('');
+      updateSelectedCount();
     }
 
     function toggleAddForm() {
-      const form = document.getElementById('singleAddForm');
-      form.classList.toggle('hidden');
+      document.getElementById('singleAddForm').classList.toggle('hidden');
     }
 
     function addSingleProduct() {
@@ -444,6 +464,42 @@
       }
     }
 
+    function deleteSingleProduct(sku) {
+      if (currentUserKey !== 'admin') return alert('Access denied: Delete restricted to Super Admin only.');
+      if (confirm(`Are you sure you want to delete product ${sku}?`)) {
+        products = products.filter(p => p.id !== sku);
+        renderProducts();
+        addAuditLog(`Deleted product SKU: ${sku} by Admin`);
+        alert('Product deleted successfully.');
+      }
+    }
+
+    function toggleSelectAll(master) {
+      const checkboxes = document.querySelectorAll('.row-checkbox');
+      checkboxes.forEach(cb => cb.checked = master.checked);
+      updateSelectedCount();
+    }
+
+    function updateSelectedCount() {
+      const checkboxes = document.querySelectorAll('.row-checkbox');
+      const checked = Array.from(checkboxes).filter(cb => cb.checked);
+      document.getElementById('selectedCount').innerText = checked.length;
+    }
+
+    function bulkDeleteSelected() {
+      if (currentUserKey !== 'admin') return alert('Access denied: Bulk delete restricted to Super Admin only.');
+      const checkboxes = document.querySelectorAll('.row-checkbox:checked');
+      if (checkboxes.length === 0) return alert('No products selected for deletion.');
+
+      if (confirm(`Are you sure you want to delete ${checkboxes.length} selected product(s)?`)) {
+        const idsToDelete = Array.from(checkboxes).map(cb => cb.value);
+        products = products.filter(p => !idsToDelete.includes(p.id));
+        renderProducts();
+        addAuditLog(`Bulk deleted ${idsToDelete.length} items by Admin`);
+        alert('Selected products deleted successfully.');
+      }
+    }
+
     function handleBulkUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -455,7 +511,6 @@
           if (file.name.endsWith('.json')) {
             newItems = JSON.parse(content);
           } else {
-            // Simple CSV parser
             const lines = content.split('\n');
             for (let i = 1; i < lines.length; i++) {
               const cols = lines[i].split(',');
