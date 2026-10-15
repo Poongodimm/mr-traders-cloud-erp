@@ -15,7 +15,7 @@
 </head>
 <body class="min-h-screen flex flex-col">
 
-  <!-- LOGIN MODAL / SCREEN -->
+  <!-- LOGIN MODAL -->
   <div id="loginScreen" class="fixed inset-0 z-50 bg-[#090d16]/95 backdrop-blur-xl flex items-center justify-center p-4">
     <div class="glass-card max-w-md w-full p-8 rounded-2xl shadow-2xl border border-purple-500/40 space-y-6">
       <div class="text-center space-y-2">
@@ -37,7 +37,10 @@
         </div>
 
         <div>
-          <label class="block text-xs font-mono text-purple-300 mb-1">Security PIN / Password</label>
+          <div class="flex justify-between items-center mb-1">
+            <label class="block text-xs font-mono text-purple-300">Security PIN / Password</label>
+            <button type="button" onclick="openForgotModal()" class="text-[11px] text-purple-400 hover:underline">Forgot Password?</button>
+          </div>
           <input type="password" id="loginPin" required placeholder="Enter PIN (Default: 1234)" class="w-full bg-[#161b22] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500">
         </div>
 
@@ -45,7 +48,34 @@
           <i class="fa-solid fa-key mr-2"></i>Authenticate & Access Node
         </button>
       </form>
-      <p class="text-[11px] text-gray-500 text-center font-mono">Demo Password for all accounts: <span class="text-purple-400 font-bold">1234</span></p>
+    </div>
+  </div>
+
+  <!-- FORGOT PASSWORD MODAL -->
+  <div id="forgotModal" class="fixed inset-0 z-50 bg-[#090d16]/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-sm w-full p-6 rounded-2xl border border-purple-500/40 space-y-4">
+      <h3 class="font-bold text-white text-lg">Reset Password via OTP</h3>
+      <p class="text-xs text-gray-400">Enter your registered email address to receive a verification OTP code.</p>
+      <input type="email" id="forgotEmailInput" placeholder="Enter user email..." class="w-full bg-[#161b22] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none">
+      <div class="flex gap-2">
+        <button onclick="sendOtp()" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded-lg text-xs">Send OTP</button>
+        <button onclick="closeForgotModal()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-2 rounded-lg text-xs">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHANGE PASSWORD MODAL -->
+  <div id="changePassModal" class="fixed inset-0 z-50 bg-[#090d16]/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-sm w-full p-6 rounded-2xl border border-purple-500/40 space-y-4">
+      <h3 class="font-bold text-white text-lg">Change Security PIN</h3>
+      <div class="space-y-3">
+        <input type="password" id="currentPassInput" placeholder="Current PIN" class="w-full bg-[#161b22] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none">
+        <input type="password" id="newPassInput" placeholder="New PIN" class="w-full bg-[#161b22] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none">
+      </div>
+      <div class="flex gap-2">
+        <button onclick="submitChangePassword()" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded-lg text-xs">Update PIN</button>
+        <button onclick="closeChangePassModal()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-2 rounded-lg text-xs">Cancel</button>
+      </div>
     </div>
   </div>
 
@@ -65,7 +95,7 @@
         </div>
       </div>
 
-      <!-- ACTIVE USER SESSION BADGE & LOGOUT BUTTON -->
+      <!-- ACTIVE USER SESSION BADGE & AUTH CONTROLS -->
       <div class="flex items-center space-x-3">
         <div class="hidden sm:flex items-center space-x-2 bg-[#161b22] border border-purple-800/40 px-3 py-1.5 rounded-lg">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -74,8 +104,12 @@
             <div id="activeUserRole" class="text-[10px] font-mono text-purple-400">Role: Super Admin</div>
           </div>
         </div>
+
+        <button onclick="openChangePassModal()" class="bg-purple-500/10 hover:bg-purple-600 text-purple-300 hover:text-white border border-purple-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1">
+          <i class="fa-solid fa-key"></i> Pass
+        </button>
         
-        <button onclick="logout()" class="bg-red-500/10 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2">
+        <button onclick="logout()" class="bg-red-500/10 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1">
           <i class="fa-solid fa-right-from-bracket"></i> Logout
         </button>
       </div>
@@ -171,35 +205,41 @@
   </main>
 
   <script>
+    const userPasswords = {
+      admin: '1234',
+      worker: '1234',
+      auditor: '1234'
+    };
+
     const userProfiles = {
       admin: { name: 'Super Admin', email: 'mrtraders3355@gmail.com', role: 'Super Admin', readOnly: false },
       worker: { name: 'Worker / Cashier', email: 'arundon1002@gmail.com', role: 'Worker', readOnly: false },
       auditor: { name: 'Auditor', email: 'auditor@mrtraders.com', role: 'Auditor (Read-Only)', readOnly: true }
     };
 
-    let currentUser = null;
+    let currentUserKey = null;
 
     function handleLogin(e) {
       e.preventDefault();
       const userKey = document.getElementById('loginUserSelect').value;
       const pin = document.getElementById('loginPin').value;
 
-      if (pin !== '1234') {
-        alert('Invalid Security PIN! Use 1234.');
+      if (pin !== userPasswords[userKey]) {
+        alert('Invalid Security PIN!');
         return;
       }
 
-      currentUser = userProfiles[userKey];
+      currentUserKey = userKey;
+      const currentUser = userProfiles[userKey];
       document.getElementById('loginScreen').classList.add('hidden');
       document.getElementById('activeUserEmail').innerText = currentUser.email;
       document.getElementById('activeUserRole').innerText = `Role: ${currentUser.role}`;
       document.getElementById('roleBadge').innerText = `Role: ${currentUser.role}`;
 
-      // Disable payment button for auditor
       const checkoutBtn = document.getElementById('checkoutBtn');
       if (currentUser.readOnly) {
         checkoutBtn.disabled = true;
-        checkoutBtn.innerText = 'Read-Only Mode (Payment Disabled)';
+        checkoutBtn.innerText = 'Read-Only Mode';
         checkoutBtn.classList.add('opacity-50', 'cursor-not-allowed');
       } else {
         checkoutBtn.disabled = false;
@@ -212,11 +252,56 @@
 
     function logout() {
       if (confirm('Are you sure you want to log out?')) {
-        addAuditLog(`User logged out: ${currentUser ? currentUser.email : 'Unknown'}`);
-        currentUser = null;
+        addAuditLog(`User logged out`);
+        currentUserKey = null;
         document.getElementById('loginPin').value = '';
         document.getElementById('loginScreen').classList.remove('hidden');
       }
+    }
+
+    function openForgotModal() { document.getElementById('forgotModal').classList.remove('hidden'); }
+    function closeForgotModal() { document.getElementById('forgotModal').classList.add('hidden'); }
+
+    function sendOtp() {
+      const email = document.getElementById('forgotEmailInput').value;
+      if (!email) return alert('Please enter your email address.');
+      
+      const matchedKey = Object.keys(userProfiles).find(k => userProfiles[k].email === email);
+      if (!matchedKey) return alert('Email address not recognized in ERP directory.');
+
+      const otp = Math.floor(1000 + Math.random() * 9000);
+      const newPin = prompt(`[SIMULATED OTP SENT TO ${email}]\nYour Verification OTP is: ${otp}\n\nEnter this 4-digit OTP code to reset your password:`);
+      
+      if (newPin) {
+        const temporaryPass = prompt('OTP verified successfully!\nEnter your new secure PIN password:');
+        if (temporaryPass) {
+          userPasswords[matchedKey] = temporaryPass;
+          alert('Password successfully reset! You can now log in with your new PIN.');
+          closeForgotModal();
+        }
+      }
+    }
+
+    function openChangePassModal() { document.getElementById('changePassModal').classList.remove('hidden'); }
+    function closeChangePassModal() { document.getElementById('changePassModal').classList.add('hidden'); }
+
+    function submitChangePassword() {
+      const currentPass = document.getElementById('currentPassInput').value;
+      const newPass = document.getElementById('newPassInput').value;
+
+      if (currentPass !== userPasswords[currentUserKey]) {
+        return alert('Current PIN is incorrect!');
+      }
+      if (!newPass || newPass.length < 4) {
+        return alert('New PIN must be at least 4 digits.');
+      }
+
+      userPasswords[currentUserKey] = newPass;
+      alert('Security PIN updated successfully!');
+      document.getElementById('currentPassInput').value = '';
+      document.getElementById('newPassInput').value = '';
+      closeChangePassModal();
+      addAuditLog(`Security PIN changed for ${userProfiles[currentUserKey].email}`);
     }
 
     function addAuditLog(action) {
@@ -270,7 +355,7 @@
     }
 
     function addToCart(sku) {
-      if (currentUser && currentUser.readOnly) return alert('Auditor account is Read-Only!');
+      if (userProfiles[currentUserKey].readOnly) return alert('Auditor account is Read-Only!');
       const item = products.find(p => p.id === sku);
       const existing = cart.find(c => c.id === sku);
       if (existing) existing.qty++;
@@ -314,7 +399,7 @@
     function checkout() {
       if (cart.length === 0) return alert('Cart is empty!');
       alert('Order processed successfully!');
-      addAuditLog(`Transaction processed by ${currentUser.email} for cart items`);
+      addAuditLog(`Transaction processed by ${userProfiles[currentUserKey].email}`);
       cart = [];
       updateCart();
     }
