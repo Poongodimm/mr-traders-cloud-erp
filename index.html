@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
   <title>RSP POS — MR Traders</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -57,29 +58,48 @@
     </div>
   </div>
 
-  <!-- FORGOT PIN MODAL -->
-  <div id="forgotModal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+  <!-- FORGOT PIN MODAL (FIXED) -->
+  <div id="forgotModal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm hidden items-center justify-center p-4">
     <div class="bg-white max-w-sm w-full p-6 rounded-2xl border border-gray-100 space-y-4 shadow-xl">
-      <h3 class="font-bold text-gray-900 text-lg">Reset PIN via Email OTP</h3>
-      <p class="text-xs text-gray-500">Enter your registered email address to receive an OTP code.</p>
+      <div class="flex justify-between items-center">
+        <h3 class="font-bold text-gray-900 text-lg">Reset PIN via Email OTP</h3>
+        <button type="button" onclick="closeForgotModal()" class="text-gray-400 hover:text-gray-600">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <p class="text-xs text-gray-500">A 4-digit verification code will be sent to your registered account email.</p>
       
       <div class="space-y-3">
-        <input type="email" id="forgotEmailInput" placeholder="Enter registered email..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none">
+        <div>
+          <label class="block text-[11px] font-semibold text-gray-600 mb-1">Registered Email</label>
+          <input type="email" id="forgotEmailInput" placeholder="Enter registered email..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        
         <div id="otpSection" class="hidden space-y-2">
-          <input type="text" id="otpCodeInput" placeholder="Enter 4-digit OTP" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 font-mono tracking-widest text-center">
-          <input type="password" id="resetNewPassInput" placeholder="Enter New PIN Password" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900">
+          <div>
+            <label class="block text-[11px] font-semibold text-gray-600 mb-1">4-Digit OTP</label>
+            <input type="text" id="otpCodeInput" maxlength="4" placeholder="••••" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 font-mono tracking-widest text-center focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-gray-600 mb-1">New PIN</label>
+            <input type="password" id="resetNewPassInput" placeholder="Enter new PIN (min 4 digits)" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
         </div>
       </div>
 
-      <div class="flex gap-2">
-        <button id="forgotActionBtn" type="button" onclick="requestOtp()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg text-xs transition">Send Confirmation OTP</button>
-        <button type="button" onclick="closeForgotModal()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-xs">Cancel</button>
+      <div class="flex gap-2 pt-2">
+        <button id="forgotActionBtn" type="button" onclick="requestOtp()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg text-xs transition">
+          Send Confirmation OTP
+        </button>
+        <button type="button" onclick="closeForgotModal()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-xs">
+          Cancel
+        </button>
       </div>
     </div>
   </div>
 
   <!-- CHANGE PIN MODAL -->
-  <div id="changePassModal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+  <div id="changePassModal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm hidden items-center justify-center p-4">
     <div class="bg-white max-w-sm w-full p-6 rounded-2xl border border-gray-100 space-y-4 shadow-xl">
       <h3 class="font-bold text-gray-900 text-lg">Change Security PIN</h3>
       <div class="space-y-3">
@@ -134,4 +154,140 @@
         </button>
 
         <button onclick="logout()" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1">
-          <i class="fa-solid fa-right-from-
+          <i class="fa-solid fa-right-from-bracket"></i> Logout
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN APP CONTAINER -->
+  <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6">
+
+    <!-- 1. DASHBOARD VIEW -->
+    <div id="view-dashboard" class="space-y-6">
+      <div>
+        <h2 class="text-2xl font-bold text-gray-900" id="welcomeHeading">Welcome, Super Admin</h2>
+        <p class="text-sm text-gray-500">Ready for today's sales operations?</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="card-box rounded-xl p-5 flex justify-between items-center md:col-span-1">
+          <div>
+            <div class="text-xs text-gray-500 uppercase font-medium">Your Sales Today</div>
+            <div class="text-3xl font-bold text-gray-900 mt-1" id="dashTotalSales">₹0.00</div>
+            <div class="text-xs text-gray-400 mt-1" id="dashBillCount">0 bills generated today</div>
+          </div>
+          <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-cart-shopping"></i>
+          </div>
+        </div>
+
+        <div class="card-box rounded-xl p-5 md:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <button onclick="showTab('pos')" class="text-left p-3 rounded-lg hover:bg-gray-50 border border-gray-100 transition">
+            <i class="fa-solid fa-cash-register text-indigo-600 text-lg mb-2"></i>
+            <div class="font-bold text-sm text-gray-900">Start POS Billing</div>
+            <div class="text-[11px] text-gray-500">Scan items and receipts</div>
+          </button>
+          <button onclick="showTab('history')" class="text-left p-3 rounded-lg hover:bg-gray-50 border border-gray-100 transition">
+            <i class="fa-solid fa-clock-rotate-left text-indigo-600 text-lg mb-2"></i>
+            <div class="font-bold text-sm text-gray-900">Billing History</div>
+            <div class="text-[11px] text-gray-500">View past invoices</div>
+          </button>
+          <button onclick="showTab('products')" class="text-left p-3 rounded-lg hover:bg-gray-50 border border-gray-100 transition">
+            <i class="fa-solid fa-box text-emerald-600 text-lg mb-2"></i>
+            <div class="font-bold text-sm text-gray-900">Products</div>
+            <div class="text-[11px] text-gray-500">Manage catalog</div>
+          </button>
+          <button onclick="showTab('onboard')" class="text-left p-3 rounded-lg hover:bg-gray-50 border border-gray-100 transition">
+            <i class="fa-solid fa-barcode text-purple-600 text-lg mb-2"></i>
+            <div class="font-bold text-sm text-gray-900">Onboard Product</div>
+            <div class="text-[11px] text-gray-500">Add new items</div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. POS BILLING VIEW -->
+    <div id="view-pos" class="hidden space-y-6">
+      <div class="flex justify-between items-center">
+        <div>
+          <h2 class="text-xl font-bold text-gray-900">POS Billing</h2>
+          <p class="text-xs text-gray-500">Scan barcodes or search products. Press Enter in barcode field to quickly add.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 space-y-4">
+          <div class="card-box rounded-xl p-4 space-y-3">
+            <div class="flex items-center justify-between text-xs text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
+              <span><i class="fa-solid fa-wifi mr-1"></i> Scanner Ready</span>
+              <span class="font-mono text-gray-500">USB / Bluetooth / HID</span>
+            </div>
+            <div class="flex gap-2">
+              <input type="text" id="barcodeInput" onkeydown="if(event.key === 'Enter') addItemByBarcode()" placeholder="Scan barcode or type SKU (e.g. SKU-1011) & press Enter..." class="flex-grow bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-indigo-500">
+              <button onclick="addItemByBarcode()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition">Add</button>
+            </div>
+          </div>
+
+          <div class="card-box rounded-xl p-4 min-h-[300px]">
+            <h3 class="font-bold text-gray-900 text-sm mb-3">Cart (<span id="cartCountNum">0</span>)</h3>
+            <div id="posCartItems" class="divide-y divide-gray-100 text-sm">
+              <p class="text-xs text-gray-400 text-center py-12">Cart is empty. Scan a barcode to start.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Checkout Column -->
+        <div class="card-box rounded-xl p-5 space-y-4 h-fit">
+          <h3 class="font-bold text-gray-900 border-b border-gray-100 pb-3">Checkout</h3>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Customer Mobile</label>
+            <input type="text" id="custMobile" placeholder="Enter 10-digit mobile number" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none">
+          </div>
+          <div class="flex rounded-lg border border-gray-300 p-0.5 bg-gray-50 text-xs font-medium text-center">
+            <button type="button" class="flex-1 py-1.5 rounded bg-indigo-600 text-white shadow-sm">B2C Retail</button>
+            <button type="button" class="flex-1 py-1.5 text-gray-600 hover:text-gray-900">B2B Invoice</button>
+          </div>
+          <div class="space-y-2 pt-2 text-sm text-gray-600">
+            <div class="flex justify-between"><span>Taxable Value</span><span id="taxableVal">₹0.00</span></div>
+            <div class="flex justify-between"><span>CGST (9%)</span><span id="cgstVal">₹0.00</span></div>
+            <div class="flex justify-between"><span>SGST (9%)</span><span id="sgstVal">₹0.00</span></div>
+            <div class="flex justify-between items-center pt-2 border-t border-gray-200 text-base font-bold text-gray-900">
+              <span>Total</span><span id="posGrandTotal" class="text-indigo-600">₹0.00</span>
+            </div>
+          </div>
+          <button id="checkoutBtn" onclick="completeSale()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-lg text-sm transition">
+            Complete Sale & Print
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. HISTORY VIEW -->
+    <div id="view-history" class="hidden space-y-6">
+      <div class="card-box rounded-xl p-5">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Billing History</h2>
+        <div id="historyTableContainer" class="overflow-x-auto">
+          <p class="text-sm text-gray-500">No past transactions recorded in this active session.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. PRODUCTS CATALOG VIEW -->
+    <div id="view-products" class="hidden space-y-6">
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div class="card-box rounded-xl p-4">
+          <div class="text-xs text-gray-500 font-medium">TOTAL PRODUCTS</div>
+          <div class="text-2xl font-bold text-gray-900 mt-1" id="totalProductsCount">5</div>
+        </div>
+        <div class="card-box rounded-xl p-4 border-l-4 border-emerald-500">
+          <div class="text-xs text-gray-500 font-medium">HEALTHY / IN STOCK</div>
+          <div class="text-2xl font-bold text-emerald-600 mt-1" id="healthyCount">2</div>
+        </div>
+        <div class="card-box rounded-xl p-4 border-l-4 border-amber-500">
+          <div class="text-xs text-gray-500 font-medium">LOW STOCK</div>
+          <div class="text-2xl font-bold text-amber-600 mt-1" id="lowStockCount">1</div>
+        </div>
+        <div class="card-box rounded-xl p-4 border-l-4 border-red-500">
+          <div class="text-xs text-gray-500 font-medium">CRITICAL / OOS</div>
+          <div class="text-2xl font-bold text-red-600 mt-1" id="criticalCount">2
