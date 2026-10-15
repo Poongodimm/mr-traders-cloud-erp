@@ -10,8 +10,7 @@
   <style>
     body { background-color: #090d16; color: #f3f4f6; font-family: system-ui, -apple-system, sans-serif; }
     .glass-card { background: rgba(13, 17, 23, 0.8); border: 1px solid rgba(139, 92, 246, 0.2); backdrop-filter: blur(12px); }
-    .glow-purple { box-shadow: 0 0 20px rgba(139, 92, 246, 0.25); }
-    .glow-indigo { box-shadow: 0 0 20px rgba(99, 102, 241, 0.25); }
+    .nav-btn.active { background: rgba(139, 92, 246, 0.25); border-color: rgba(139, 92, 246, 0.6); color: #fff; }
   </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -21,7 +20,7 @@
     <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
       <div class="flex items-center space-x-3">
         <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center font-bold text-white shadow-lg">
-          <i class="fa-solid font-bold fa-bolt"></i>
+          <i class="fa-solid fa-bolt"></i>
         </div>
         <div>
           <h1 class="font-bold text-white tracking-wide text-lg flex items-center gap-2">
@@ -33,126 +32,212 @@
       </div>
 
       <div class="flex items-center space-x-4">
-        <div class="hidden md:flex items-center space-x-2 text-xs font-mono bg-purple-950/40 border border-purple-800/40 px-3 py-1.5 rounded-md text-purple-300">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span>SYSTEM: ONLINE</span>
-        </div>
-        <select id="roleSelector" onchange="switchRole(this.value)" class="bg-[#161b22] text-sm text-purple-300 border border-purple-600/40 px-3 py-1.5 rounded-lg focus:outline-none focus:border-purple-400">
+        <select id="roleSelector" onchange="switchRole(this.value)" class="bg-[#161b22] text-sm text-purple-300 border border-purple-600/40 px-3 py-1.5 rounded-lg focus:outline-none">
           <option value="admin">Super Admin (mrtraders3355@gmail.com)</option>
           <option value="worker">Worker (arundon1002@gmail.com)</option>
           <option value="auditor">Auditor (auditor@mrtraders.com)</option>
         </select>
       </div>
     </div>
+
+    <!-- Page Tabs -->
+    <div class="max-w-7xl mx-auto px-4 py-2 flex space-x-2 border-t border-gray-800/60 overflow-x-auto text-sm">
+      <button onclick="showTab('pos')" id="tab-pos" class="nav-btn active px-4 py-1.5 rounded-lg border border-transparent text-gray-400 hover:text-white transition flex items-center gap-2">
+        <i class="fa-solid fa-cash-register"></i> POS Billing
+      </button>
+      <button onclick="showTab('inventory')" id="tab-inventory" class="nav-btn px-4 py-1.5 rounded-lg border border-transparent text-gray-400 hover:text-white transition flex items-center gap-2">
+        <i class="fa-solid fa-boxes-stacked"></i> Inventory
+      </button>
+      <button onclick="showTab('analytics')" id="tab-analytics" class="nav-btn px-4 py-1.5 rounded-lg border border-transparent text-gray-400 hover:text-white transition flex items-center gap-2">
+        <i class="fa-solid fa-chart-line"></i> Analytics
+      </button>
+      <button onclick="showTab('audit')" id="tab-audit" class="nav-btn px-4 py-1.5 rounded-lg border border-transparent text-gray-400 hover:text-white transition flex items-center gap-2">
+        <i class="fa-solid fa-shield-halved"></i> Audit Logs
+      </button>
+    </div>
   </header>
 
-  <!-- Hero & Telemetry Banner -->
-  <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6">
-    <div class="glass-card rounded-2xl p-6 md:p-8 border border-purple-500/30 relative overflow-hidden">
-      <div class="absolute -right-20 -top-20 w-80 h-80 bg-purple-600/10 rounded-full blur-3xl pointer-events-none"></div>
-      
-      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div>
-          <div class="inline-flex items-center gap-2 bg-purple-900/40 border border-purple-500/30 px-3 py-1 rounded-full text-xs font-mono text-purple-300 mb-3">
-            <span class="w-2 h-2 rounded-full bg-purple-400 animate-ping"></span>
-            ACTIVE RSP CLOUD ERP NODE V3.0
+  <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6">
+    
+    <!-- Tab 1: POS Billing -->
+    <div id="view-pos" class="space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 glass-card rounded-xl p-5 space-y-4">
+          <div class="flex justify-between items-center border-b border-gray-800 pb-3">
+            <h3 class="font-bold text-white flex items-center gap-2"><i class="fa-solid fa-cash-register text-purple-400"></i> POS Terminal</h3>
+            <span class="text-xs font-mono text-gray-400" id="roleBadge">Role: Super Admin</span>
           </div>
-          <h2 class="text-3xl md:text-5xl font-extrabold text-white tracking-tight">
-            Enterprise ERP. <br>
-            <span class="bg-gradient-to-r from-purple-400 via-indigo-300 to-purple-200 bg-clip-text text-transparent">Built for Scale.</span>
-          </h2>
-          <p class="mt-3 text-gray-400 text-sm md:text-base max-w-2xl">
-            Real-time telemetry, POS billing, stock audit logs, GST compliance, and multi-role security access for MR Traders retail operations.
-          </p>
+          <input type="text" id="searchInput" oninput="filterProducts()" placeholder="Scan barcode or search products..." class="w-full bg-[#161b22] border border-gray-700 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500">
+          <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto"></div>
         </div>
 
-        <div class="grid grid-cols-2 gap-3 w-full md:w-auto font-mono">
-          <div class="bg-[#161b22] border border-gray-800 p-3 rounded-xl">
-            <div class="text-xs text-gray-400">LIVE SYSTEM HEALTH</div>
-            <div class="text-lg font-bold text-emerald-400">99.99804%</div>
+        <div class="glass-card rounded-xl p-5 flex flex-col justify-between space-y-4">
+          <div>
+            <h3 class="font-bold text-white border-b border-gray-800 pb-3 flex justify-between items-center">
+              <span>Current Order</span>
+              <span class="text-xs font-mono text-purple-400" id="cartCount">0 items</span>
+            </h3>
+            <div id="cartItems" class="divide-y divide-gray-800 max-h-60 overflow-y-auto my-3 text-sm">
+              <p class="text-xs text-gray-500 text-center py-8">Cart is empty.</p>
+            </div>
           </div>
-          <div class="bg-[#161b22] border border-gray-800 p-3 rounded-xl">
-            <div class="text-xs text-gray-400">GLOBAL LATENCY</div>
-            <div class="text-lg font-bold text-indigo-400">14.2ms</div>
+          <div class="space-y-3 pt-3 border-t border-gray-800 text-sm">
+            <div class="flex justify-between text-gray-400"><span>Subtotal</span><span id="subTotal">₹0.00</span></div>
+            <div class="flex justify-between text-gray-400"><span>GST (18%)</span><span id="taxTotal">₹0.00</span></div>
+            <div class="flex justify-between text-base font-bold text-white pt-2 border-t border-gray-800">
+              <span>Total Payable</span><span id="grandTotal" class="text-purple-400">₹0.00</span>
+            </div>
+            <button onclick="checkout()" class="w-full bg-purple-600 hover:bg-purple-500 font-bold py-2.5 rounded-lg text-white transition">Process Payment</button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Active POS Workspace -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      
-      <!-- Catalog / Scanning Panel -->
-      <div class="lg:col-span-2 glass-card rounded-xl p-5 space-y-4">
-        <div class="flex justify-between items-center border-b border-gray-800 pb-3">
-          <h3 class="font-bold text-white flex items-center gap-2">
-            <i class="fa-solid fa-cash-register text-purple-400"></i> POS Billing Terminal
-          </h3>
-          <span class="text-xs font-mono text-gray-400" id="roleBadge">Role: Super Admin</span>
-        </div>
-
-        <!-- Search Bar -->
-        <div class="relative">
-          <input type="text" id="searchInput" oninput="filterProducts()" placeholder="Scan barcode or search 2,635+ beauty products..." class="w-full bg-[#161b22] border border-gray-700 rounded-lg px-4 py-2.5 pl-10 text-sm text-white focus:outline-none focus:border-purple-500">
-          <i class="fa-solid fa-barcode absolute left-3 top-3.5 text-gray-400"></i>
-        </div>
-
-        <!-- Product Grid -->
-        <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-80 overflow-y-auto pr-1">
-          <!-- Populated by JS -->
+    <!-- Tab 2: Inventory -->
+    <div id="view-inventory" class="hidden space-y-6">
+      <div class="glass-card rounded-xl p-5">
+        <h3 class="font-bold text-white mb-4"><i class="fa-solid fa-boxes-stacked text-indigo-400 mr-2"></i>Stock Inventory</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm text-gray-300">
+            <thead class="bg-[#161b22] text-gray-400 font-mono text-xs uppercase">
+              <tr><th class="p-3">SKU</th><th class="p-3">Product Name</th><th class="p-3">Category</th><th class="p-3">Stock Level</th><th class="p-3">Price</th></tr>
+            </thead>
+            <tbody id="inventoryTable" class="divide-y divide-gray-800"></tbody>
+          </table>
         </div>
       </div>
-
-      <!-- Order Cart & Receipt Panel -->
-      <div class="glass-card rounded-xl p-5 flex flex-col justify-between space-y-4">
-        <div>
-          <h3 class="font-bold text-white border-b border-gray-800 pb-3 flex justify-between items-center">
-            <span><i class="fa-solid fa-cart-shopping text-indigo-400 mr-2"></i>Current Order</span>
-            <span class="text-xs font-mono text-purple-400" id="cartCount">0 items</span>
-          </h3>
-
-          <div id="cartItems" class="divide-y divide-gray-800 max-h-60 overflow-y-auto my-3 text-sm">
-            <p class="text-xs text-gray-500 text-center py-8">Cart is empty. Select products from terminal.</p>
-          </div>
-        </div>
-
-        <div class="space-y-3 pt-3 border-t border-gray-800">
-          <div class="flex justify-between text-xs text-gray-400">
-            <span>Subtotal</span>
-            <span id="subTotal">₹0.00</span>
-          </div>
-          <div class="flex justify-between text-xs text-gray-400">
-            <span>GST (18%)</span>
-            <span id="taxTotal">₹0.00</span>
-          </div>
-          <div class="flex justify-between text-base font-bold text-white pt-2 border-t border-gray-800">
-            <span>Total Payable</span>
-            <span id="grandTotal" class="text-purple-400">₹0.00</span>
-          </div>
-
-          <button onclick="checkout()" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 font-bold py-2.5 rounded-lg text-white shadow-lg shadow-purple-900/30 transition">
-            Process Payment (UPI / Cash)
-          </button>
-        </div>
-      </div>
-
     </div>
+
+    <!-- Tab 3: Analytics -->
+    <div id="view-analytics" class="hidden space-y-6">
+      <div class="glass-card rounded-xl p-5">
+        <h3 class="font-bold text-white mb-4"><i class="fa-solid fa-chart-line text-emerald-400 mr-2"></i>Sales Performance</h3>
+        <canvas id="salesChart" class="max-h-80 w-full"></canvas>
+      </div>
+    </div>
+
+    <!-- Tab 4: Audit Logs -->
+    <div id="view-audit" class="hidden space-y-6">
+      <div class="glass-card rounded-xl p-5">
+        <h3 class="font-bold text-white mb-4"><i class="fa-solid fa-shield-halved text-purple-400 mr-2"></i>System Security Audit Logs</h3>
+        <ul class="space-y-3 font-mono text-xs text-gray-400">
+          <li class="bg-[#161b22] p-3 rounded-lg border border-gray-800 flex justify-between"><span>[LOG 0842] Role changed to Super Admin</span><span class="text-gray-500">Just now</span></li>
+          <li class="bg-[#161b22] p-3 rounded-lg border border-gray-800 flex justify-between"><span>[LOG 0841] Order #3355 processed (₹1,248.00)</span><span class="text-gray-500">2 mins ago</span></li>
+          <li class="bg-[#161b22] p-3 rounded-lg border border-gray-800 flex justify-between"><span>[LOG 0840] Inventory sync completed across nodes</span><span class="text-gray-500">10 mins ago</span></li>
+        </ul>
+      </div>
+    </div>
+
   </main>
 
   <script>
     const products = [
-      { id: 'SKU-3351', name: 'L\'Oréal Paris Serum 30ml', price: 699, category: 'Skincare' },
-      { id: 'SKU-3352', name: 'Maybelline Matte Lipstick', price: 299, category: 'Cosmetics' },
-      { id: 'SKU-3353', name: 'Nivea Soft Moisturizer 200ml', price: 349, category: 'Skincare' },
-      { id: 'SKU-3354', name: 'Lakmé Sun Expert SPF 50', price: 450, category: 'Sun Care' },
-      { id: 'SKU-3355', name: 'Plum Green Tea Face Wash', price: 325, category: 'Facial Care' },
-      { id: 'SKU-3356', name: 'Minimalist Niacinamide 10%', price: 599, category: 'Serums' }
+      { id: 'SKU-3351', name: 'L\'Oréal Paris Serum 30ml', price: 699, category: 'Skincare', stock: 142 },
+      { id: 'SKU-3352', name: 'Maybelline Matte Lipstick', price: 299, category: 'Cosmetics', stock: 89 },
+      { id: 'SKU-3353', name: 'Nivea Soft Moisturizer 200ml', price: 349, category: 'Skincare', stock: 210 },
+      { id: 'SKU-3354', name: 'Lakmé Sun Expert SPF 50', price: 450, category: 'Sun Care', stock: 65 },
+      { id: 'SKU-3355', name: 'Plum Green Tea Face Wash', price: 325, category: 'Facial Care', stock: 112 },
+      { id: 'SKU-3356', name: 'Minimalist Niacinamide 10%', price: 599, category: 'Serums', stock: 78 }
     ];
 
     let cart = [];
 
+    function showTab(tab) {
+      ['pos', 'inventory', 'analytics', 'audit'].forEach(t => {
+        document.getElementById(`view-${t}`).classList.add('hidden');
+        document.getElementById(`tab-${t}`).classList.remove('active');
+      });
+      document.getElementById(`view-${tab}`).classList.remove('hidden');
+      document.getElementById(`tab-${tab}`).classList.add('active');
+      if (tab === 'analytics') initChart();
+    }
+
     function renderProducts(items = products) {
-      const grid = document.getElementById('productGrid');
-      grid.innerHTML = items.map(p => `
-        <div class="bg-[#161b22] border border-gray-800 p-3 rounded-lg flex justify-between items-center hover:border-purple-500/50 transition">
+      document.getElementById('productGrid').innerHTML = items.map(p => `
+        <div class="bg-[#161b22] border border-gray-800 p-3 rounded-lg flex justify-between items-center">
           <div>
+            <div class="text-xs font-mono text-purple-400">${p.id}</div>
+            <div class="text-sm font-semibold text-white">${p.name}</div>
+            <div class="text-xs text-gray-400">₹${p.price}</div>
+          </div>
+          <button onclick="addToCart('${p.id}')" class="bg-purple-600/30 hover:bg-purple-600 text-purple-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">+ Add</button>
+        </div>
+      `).join('');
+
+      document.getElementById('inventoryTable').innerHTML = products.map(p => `
+        <tr>
+          <td class="p-3 font-mono text-purple-400">${p.id}</td>
+          <td class="p-3 font-semibold text-white">${p.name}</td>
+          <td class="p-3 text-gray-400">${p.category}</td>
+          <td class="p-3 font-bold ${p.stock < 80 ? 'text-amber-400' : 'text-emerald-400'}">${p.stock} units</td>
+          <td class="p-3 font-mono">₹${p.price}</td>
+        </tr>
+      `).join('');
+    }
+
+    function addToCart(sku) {
+      const item = products.find(p => p.id === sku);
+      const existing = cart.find(c => c.id === sku);
+      if (existing) existing.qty++;
+      else cart.push({ ...item, qty: 1 });
+      updateCart();
+    }
+
+    function updateCart() {
+      const cartEl = document.getElementById('cartItems');
+      if (cart.length === 0) {
+        cartEl.innerHTML = '<p class="text-xs text-gray-500 text-center py-8">Cart is empty.</p>';
+        document.getElementById('cartCount').innerText = '0 items';
+        document.getElementById('subTotal').innerText = '₹0.00';
+        document.getElementById('taxTotal').innerText = '₹0.00';
+        document.getElementById('grandTotal').innerText = '₹0.00';
+        return;
+      }
+
+      let sub = 0, totalQty = 0;
+      cartEl.innerHTML = cart.map(item => {
+        sub += item.price * item.qty;
+        totalQty += item.qty;
+        return `
+          <div class="py-2 flex justify-between items-center">
+            <div>
+              <div class="font-medium text-white text-xs">${item.name}</div>
+              <div class="text-[10px] text-gray-400">₹${item.price} x ${item.qty}</div>
+            </div>
+            <span class="font-bold text-xs text-purple-300">₹${item.price * item.qty}</span>
+          </div>
+        `;
+      }).join('');
+
+      const tax = sub * 0.18;
+      document.getElementById('cartCount').innerText = `${totalQty} items`;
+      document.getElementById('subTotal').innerText = `₹${sub.toFixed(2)}`;
+      document.getElementById('taxTotal').innerText = `₹${tax.toFixed(2)}`;
+      document.getElementById('grandTotal').innerText = `₹${(sub + tax).toFixed(2)}`;
+    }
+
+    function checkout() {
+      if (cart.length === 0) return alert('Cart is empty!');
+      alert('Order processed successfully!');
+      cart = [];
+      updateCart();
+    }
+
+    let chartInstance = null;
+    function initChart() {
+      if (chartInstance) return;
+      const ctx = document.getElementById('salesChart').getContext('2d');
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+          datasets: [{ label: 'Sales (₹)', data: [12000, 19000, 15000, 22000, 28000, 35000, 42000], borderColor: '#8b5cf6', backgroundColor: 'rgba(139, 92, 246, 0.1)', fill: true }]
+        },
+        options: { responsive: true, plugins: { legend: { labels: { color: '#9ca3af' } } } }
+      });
+    }
+
+    renderProducts();
+  </script>
+</body>
+</html>
