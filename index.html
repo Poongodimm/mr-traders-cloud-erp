@@ -51,11 +51,11 @@
     </div>
   </div>
 
-  <!-- FORGOT PIN / PASSWORD MODAL WITH OTP -->
+  <!-- FORGOT PIN MODAL -->
   <div id="forgotModal" class="fixed inset-0 z-50 bg-[#090d16]/90 backdrop-blur-md hidden flex items-center justify-center p-4">
     <div class="glass-card max-w-sm w-full p-6 rounded-2xl border border-purple-500/40 space-y-4">
       <h3 class="font-bold text-white text-lg">Reset PIN via Email OTP</h3>
-      <p class="text-xs text-gray-400">Enter your registered email (e.g. mrtraders3355@gmail.com) to trigger confirmation OTP.</p>
+      <p class="text-xs text-gray-400">Enter registered email (e.g. mrtraders3355@gmail.com) to trigger confirmation OTP.</p>
       
       <div class="space-y-3">
         <input type="email" id="forgotEmailInput" placeholder="Enter registered email..." class="w-full bg-[#161b22] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none">
@@ -72,17 +72,30 @@
     </div>
   </div>
 
-  <!-- CHANGE PASSWORD MODAL -->
-  <div id="changePassModal" class="fixed inset-0 z-50 bg-[#090d16]/90 backdrop-blur-md hidden flex items-center justify-center p-4">
-    <div class="glass-card max-w-sm w-full p-6 rounded-2xl border border-purple-500/40 space-y-4">
-      <h3 class="font-bold text-white text-lg">Change Security PIN</h3>
+  <!-- EDIT PRODUCT MODAL -->
+  <div id="editProductModal" class="fixed inset-0 z-50 bg-[#090d16]/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-md w-full p-6 rounded-2xl border border-purple-500/40 space-y-4">
+      <h3 class="font-bold text-white text-lg">Edit Product / Stock</h3>
+      <input type="hidden" id="editSku">
       <div class="space-y-3">
-        <input type="password" id="currentPassInput" placeholder="Current PIN" class="w-full bg-[#161b22] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none">
-        <input type="password" id="newPassInput" placeholder="New PIN" class="w-full bg-[#161b22] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none">
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">Product Name</label>
+          <input type="text" id="editName" class="w-full bg-[#161b22] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Price (₹)</label>
+            <input type="number" id="editPrice" class="w-full bg-[#161b22] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Stock Level</label>
+            <input type="number" id="editStock" class="w-full bg-[#161b22] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+          </div>
+        </div>
       </div>
-      <div class="flex gap-2">
-        <button onclick="submitChangePassword()" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded-lg text-xs">Update PIN</button>
-        <button onclick="closeChangePassModal()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-2 rounded-lg text-xs">Cancel</button>
+      <div class="flex gap-2 pt-2">
+        <button onclick="saveEditedProduct()" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded-lg text-xs">Save Changes</button>
+        <button onclick="closeEditModal()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-2 rounded-lg text-xs">Cancel</button>
       </div>
     </div>
   </div>
@@ -103,7 +116,6 @@
         </div>
       </div>
 
-      <!-- ACTIVE USER SESSION BADGE & AUTH CONTROLS -->
       <div class="flex items-center space-x-3">
         <div class="hidden sm:flex items-center space-x-2 bg-[#161b22] border border-purple-800/40 px-3 py-1.5 rounded-lg">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -113,10 +125,6 @@
           </div>
         </div>
 
-        <button onclick="openChangePassModal()" class="bg-purple-500/10 hover:bg-purple-600 text-purple-300 hover:text-white border border-purple-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1">
-          <i class="fa-solid fa-key"></i> Pass
-        </button>
-        
         <button onclick="logout()" class="bg-red-500/10 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1">
           <i class="fa-solid fa-right-from-bracket"></i> Logout
         </button>
@@ -179,12 +187,54 @@
 
     <!-- Tab 2: Inventory -->
     <div id="view-inventory" class="hidden space-y-6">
-      <div class="glass-card rounded-xl p-5">
-        <h3 class="font-bold text-white mb-4"><i class="fa-solid fa-boxes-stacked text-indigo-400 mr-2"></i>Stock Inventory</h3>
+      <div class="glass-card rounded-xl p-5 space-y-6">
+        
+        <!-- Inventory Actions Bar -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-800 pb-4">
+          <h3 class="font-bold text-white text-lg"><i class="fa-solid fa-boxes-stacked text-indigo-400 mr-2"></i>Stock Inventory Management</h3>
+          
+          <div class="flex flex-wrap gap-2">
+            <!-- Single Product Add Button / Toggle -->
+            <button onclick="toggleAddForm()" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2">
+              <i class="fa-solid fa-plus"></i> Add Single Product
+            </button>
+            
+            <!-- Bulk Upload Button -->
+            <label class="bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/40 px-3 py-2 rounded-lg text-xs font-bold cursor-pointer transition flex items-center gap-2">
+              <i class="fa-solid fa-file-arrow-up"></i> Bulk CSV Upload
+              <input type="file" id="bulkFile" accept=".csv,.json" onchange="handleBulkUpload(event)" class="hidden">
+            </label>
+          </div>
+        </div>
+
+        <!-- Add Single Product Form (Collapsible) -->
+        <div id="singleAddForm" class="hidden bg-[#161b22] border border-purple-500/30 p-4 rounded-xl space-y-4">
+          <h4 class="font-bold text-sm text-purple-300">Add New Item to Inventory</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+            <input type="text" id="newSku" placeholder="SKU (e.g. SKU-3357)" class="bg-[#0d1117] border border-gray-700 rounded-lg px-3 py-2 text-xs text-white">
+            <input type="text" id="newName" placeholder="Product Name" class="bg-[#0d1117] border border-gray-700 rounded-lg px-3 py-2 text-xs text-white">
+            <input type="text" id="newCat" placeholder="Category" class="bg-[#0d1117] border border-gray-700 rounded-lg px-3 py-2 text-xs text-white">
+            <input type="number" id="newStock" placeholder="Stock Level" class="bg-[#0d1117] border border-gray-700 rounded-lg px-3 py-2 text-xs text-white">
+            <input type="number" id="newPrice" placeholder="Price (₹)" class="bg-[#0d1117] border border-gray-700 rounded-lg px-3 py-2 text-xs text-white">
+          </div>
+          <div class="flex justify-end gap-2">
+            <button onclick="addSingleProduct()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-1.5 rounded-lg text-xs font-bold">Save Product</button>
+            <button onclick="toggleAddForm()" class="bg-gray-800 text-gray-300 px-3 py-1.5 rounded-lg text-xs">Cancel</button>
+          </div>
+        </div>
+
+        <!-- Inventory Table -->
         <div class="overflow-x-auto">
           <table class="w-full text-left text-sm text-gray-300">
             <thead class="bg-[#161b22] text-gray-400 font-mono text-xs uppercase">
-              <tr><th class="p-3">SKU</th><th class="p-3">Product Name</th><th class="p-3">Category</th><th class="p-3">Stock Level</th><th class="p-3">Price</th></tr>
+              <tr>
+                <th class="p-3">SKU</th>
+                <th class="p-3">Product Name</th>
+                <th class="p-3">Category</th>
+                <th class="p-3">Stock Level</th>
+                <th class="p-3">Price</th>
+                <th class="p-3 text-right">Actions</th>
+              </tr>
             </thead>
             <tbody id="inventoryTable" class="divide-y divide-gray-800"></tbody>
           </table>
@@ -213,12 +263,7 @@
   </main>
 
   <script>
-    const userPasswords = {
-      admin: '1234',
-      worker: '1234',
-      auditor: '1234'
-    };
-
+    const userPasswords = { admin: '1234', worker: '1234', auditor: '1234' };
     const userProfiles = {
       admin: { name: 'Super Admin', email: 'mrtraders3355@gmail.com', role: 'Super Admin', readOnly: false },
       worker: { name: 'Worker / Cashier', email: 'arundon1002@gmail.com', role: 'Worker', readOnly: false },
@@ -228,7 +273,7 @@
     let currentUserKey = null;
     let generatedOtp = null;
     let targetResetKey = null;
-    let otpStep = 1; // 1: Send OTP, 2: Verify & Reset
+    let otpStep = 1;
 
     function handleLogin(e) {
       e.preventDefault();
@@ -277,74 +322,33 @@
       document.getElementById('forgotActionBtn').innerText = 'Send Confirmation OTP';
       document.getElementById('forgotModal').classList.remove('hidden');
     }
-
-    function closeForgotModal() {
-      document.getElementById('forgotModal').classList.add('hidden');
-    }
+    function closeForgotModal() { document.getElementById('forgotModal').classList.add('hidden'); }
 
     function requestOtp() {
       const email = document.getElementById('forgotEmailInput').value.trim();
-      if (!email) return alert('Please enter your email address.');
-
       targetResetKey = Object.keys(userProfiles).find(k => userProfiles[k].email === email);
-      if (!targetResetKey) {
-        return alert('Email address not found in system directory.');
-      }
+      if (!targetResetKey) return alert('Email not recognized in system directory.');
 
       if (otpStep === 1) {
         generatedOtp = Math.floor(1000 + Math.random() * 9000);
         alert(`[SIMULATED EMAIL SENT TO ${email}]\nConfirmation OTP Code: ${generatedOtp}`);
-        
         document.getElementById('otpSection').classList.remove('hidden');
         document.getElementById('forgotActionBtn').innerText = 'Verify & Confirm Reset';
         otpStep = 2;
       } else {
         const enteredOtp = document.getElementById('otpCodeInput').value.trim();
         const newPass = document.getElementById('resetNewPassInput').value.trim();
-
-        if (enteredOtp !== generatedOtp.toString()) {
-          return alert('Invalid OTP code entered!');
-        }
-        if (!newPass || newPass.length < 4) {
-          return alert('Please enter a new PIN of at least 4 characters.');
-        }
+        if (enteredOtp !== generatedOtp.toString()) return alert('Invalid OTP code!');
+        if (!newPass || newPass.length < 4) return alert('New PIN must be at least 4 digits.');
 
         userPasswords[targetResetKey] = newPass;
-        alert(`Password for ${email} has been successfully reset! You can now login with your new PIN.`);
-        addAuditLog(`Password reset via OTP confirmation for ${email}`);
+        alert(`Password for ${email} successfully reset!`);
+        addAuditLog(`Password reset via OTP for ${email}`);
         closeForgotModal();
       }
     }
 
-    function openChangePassModal() { document.getElementById('changePassModal').classList.remove('hidden'); }
-    function closeChangePassModal() { document.getElementById('changePassModal').classList.add('hidden'); }
-
-    function submitChangePassword() {
-      const currentPass = document.getElementById('currentPassInput').value;
-      const newPass = document.getElementById('newPassInput').value;
-
-      if (currentPass !== userPasswords[currentUserKey]) {
-        return alert('Current PIN is incorrect!');
-      }
-      if (!newPass || newPass.length < 4) {
-        return alert('New PIN must be at least 4 digits.');
-      }
-
-      userPasswords[currentUserKey] = newPass;
-      alert('Security PIN updated successfully!');
-      document.getElementById('currentPassInput').value = '';
-      document.getElementById('newPassInput').value = '';
-      closeChangePassModal();
-      addAuditLog(`Security PIN changed for ${userProfiles[currentUserKey].email}`);
-    }
-
-    function addAuditLog(action) {
-      const list = document.getElementById('auditList');
-      const time = new Date().toLocaleTimeString();
-      list.innerHTML = `<li class="bg-[#161b22] p-3 rounded-lg border border-gray-800 flex justify-between"><span>[LOG] ${action}</span><span class="text-gray-500">${time}</span></li>` + list.innerHTML;
-    }
-
-    const products = [
+    let products = [
       { id: 'SKU-3351', name: 'L\'Oréal Paris Serum 30ml', price: 699, category: 'Skincare', stock: 142 },
       { id: 'SKU-3352', name: 'Maybelline Matte Lipstick', price: 299, category: 'Cosmetics', stock: 89 },
       { id: 'SKU-3353', name: 'Nivea Soft Moisturizer 200ml', price: 349, category: 'Skincare', stock: 210 },
@@ -384,8 +388,107 @@
           <td class="p-3 text-gray-400">${p.category}</td>
           <td class="p-3 font-bold ${p.stock < 80 ? 'text-amber-400' : 'text-emerald-400'}">${p.stock} units</td>
           <td class="p-3 font-mono">₹${p.price}</td>
+          <td class="p-3 text-right">
+            <button onclick="openEditModal('${p.id}')" class="bg-purple-500/20 hover:bg-purple-600 text-purple-300 hover:text-white px-2.5 py-1 rounded text-xs transition"><i class="fa-solid fa-pen"></i> Edit</button>
+          </td>
         </tr>
       `).join('');
+    }
+
+    function toggleAddForm() {
+      const form = document.getElementById('singleAddForm');
+      form.classList.toggle('hidden');
+    }
+
+    function addSingleProduct() {
+      const id = document.getElementById('newSku').value.trim();
+      const name = document.getElementById('newName').value.trim();
+      const category = document.getElementById('newCat').value.trim();
+      const stock = parseInt(document.getElementById('newStock').value);
+      const price = parseFloat(document.getElementById('newPrice').value);
+
+      if (!id || !name || isNaN(stock) || isNaN(price)) {
+        return alert('Please fill in all product fields correctly.');
+      }
+
+      products.push({ id, name, category, stock, price });
+      renderProducts();
+      toggleAddForm();
+      addAuditLog(`Added new product: ${name} (${id})`);
+      alert('Product successfully added to inventory!');
+    }
+
+    function openEditModal(sku) {
+      const p = products.find(x => x.id === sku);
+      if (!p) return;
+      document.getElementById('editSku').value = p.id;
+      document.getElementById('editName').value = p.name;
+      document.getElementById('editPrice').value = p.price;
+      document.getElementById('editStock').value = p.stock;
+      document.getElementById('editProductModal').classList.remove('hidden');
+    }
+
+    function closeEditModal() { document.getElementById('editProductModal').classList.add('hidden'); }
+
+    function saveEditedProduct() {
+      const sku = document.getElementById('editSku').value;
+      const p = products.find(x => x.id === sku);
+      if (p) {
+        p.name = document.getElementById('editName').value;
+        p.price = parseFloat(document.getElementById('editPrice').value);
+        p.stock = parseInt(document.getElementById('editStock').value);
+        renderProducts();
+        closeEditModal();
+        addAuditLog(`Updated inventory item: ${p.name} (${sku})`);
+        alert('Product updated successfully!');
+      }
+    }
+
+    function handleBulkUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        try {
+          const content = event.target.result;
+          let newItems = [];
+          if (file.name.endsWith('.json')) {
+            newItems = JSON.parse(content);
+          } else {
+            // Simple CSV parser
+            const lines = content.split('\n');
+            for (let i = 1; i < lines.length; i++) {
+              const cols = lines[i].split(',');
+              if (cols.length >= 5) {
+                newItems.push({
+                  id: cols[0].trim(),
+                  name: cols[1].trim(),
+                  category: cols[2].trim(),
+                  stock: parseInt(cols[3]),
+                  price: parseFloat(cols[4])
+                });
+              }
+            }
+          }
+          if (newItems.length > 0) {
+            products.push(...newItems);
+            renderProducts();
+            addAuditLog(`Bulk uploaded ${newItems.length} items to inventory`);
+            alert(`Successfully uploaded ${newItems.length} items!`);
+          } else {
+            alert('No valid items found in file.');
+          }
+        } catch(err) {
+          alert('Error parsing uploaded file format.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function addAuditLog(action) {
+      const list = document.getElementById('auditList');
+      const time = new Date().toLocaleTimeString();
+      list.innerHTML = `<li class="bg-[#161b22] p-3 rounded-lg border border-gray-800 flex justify-between"><span>[LOG] ${action}</span><span class="text-gray-500">${time}</span></li>` + list.innerHTML;
     }
 
     function addToCart(sku) {
@@ -407,22 +510,12 @@
         document.getElementById('grandTotal').innerText = '₹0.00';
         return;
       }
-
       let sub = 0, totalQty = 0;
       cartEl.innerHTML = cart.map(item => {
         sub += item.price * item.qty;
         totalQty += item.qty;
-        return `
-          <div class="py-2 flex justify-between items-center">
-            <div>
-              <div class="font-medium text-white text-xs">${item.name}</div>
-              <div class="text-[10px] text-gray-400">₹${item.price} x ${item.qty}</div>
-            </div>
-            <span class="font-bold text-xs text-purple-300">₹${item.price * item.qty}</span>
-          </div>
-        `;
+        return `<div class="py-2 flex justify-between items-center"><div><div class="font-medium text-white text-xs">${item.name}</div><div class="text-[10px] text-gray-400">₹${item.price} x ${item.qty}</div></div><span class="font-bold text-xs text-purple-300">₹${item.price * item.qty}</span></div>`;
       }).join('');
-
       const tax = sub * 0.18;
       document.getElementById('cartCount').innerText = `${totalQty} items`;
       document.getElementById('subTotal').innerText = `₹${sub.toFixed(2)}`;
