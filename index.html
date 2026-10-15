@@ -3,588 +3,302 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RSP Cloud ERP Node V3.0 — MR Traders</title>
+  <title>RSP POS — MR Traders</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
-    body { background-color: #090d16; color: #f3f4f6; font-family: system-ui, -apple-system, sans-serif; }
-    .glass-card { background: rgba(13, 17, 23, 0.85); border: 1px solid rgba(139, 92, 246, 0.25); backdrop-filter: blur(12px); }
-    .nav-btn.active { background: rgba(139, 92, 246, 0.25); border-color: rgba(139, 92, 246, 0.6); color: #fff; }
+    body { background-color: #f8fafc; color: #1e293b; font-family: system-ui, -apple-system, sans-serif; }
+    .card-box { background: #ffffff; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .nav-btn.active { background: #e0e7ff; color: #3730a3; font-weight: 600; border-color: #c7d2fe; }
   </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
-  <!-- LOGIN MODAL -->
-  <div id="loginScreen" class="fixed inset-0 z-50 bg-[#090d16]/95 backdrop-blur-xl flex items-center justify-center p-4">
-    <div class="glass-card max-w-md w-full p-8 rounded-2xl shadow-2xl border border-purple-500/40 space-y-6">
-      <div class="text-center space-y-2">
-        <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 mx-auto flex items-center justify-center text-white text-xl shadow-lg shadow-purple-900/50">
-          <i class="fa-solid fa-shield-halved"></i>
-        </div>
-        <h2 class="text-2xl font-bold text-white tracking-wide">ERP Gateway Authentication</h2>
-        <p class="text-xs text-gray-400">Reverie Synaptic Pulse Node V3.0 — MR Traders</p>
-      </div>
-
-      <form onsubmit="handleLogin(event)" class="space-y-4">
-        <div>
-          <label class="block text-xs font-mono text-purple-300 mb-1">Select User ID / Account</label>
-          <select id="loginUserSelect" class="w-full bg-[#161b22] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500">
-            <option value="admin">Super Admin — mrtraders3355@gmail.com</option>
-            <option value="worker">Worker — arundon1002@gmail.com</option>
-            <option value="auditor">Auditor — auditor@mrtraders.com</option>
-          </select>
-        </div>
-
-        <div>
-          <div class="flex justify-between items-center mb-1">
-            <label class="block text-xs font-mono text-purple-300">Security PIN / Password</label>
-            <button type="button" onclick="openForgotModal()" class="text-[11px] text-purple-400 hover:underline">Forgot Pin / Password?</button>
+  <!-- TOP HEADER BAR -->
+  <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-2.5 flex justify-between items-center">
+      <div class="flex items-center space-x-6">
+        <div class="flex items-center space-x-2 font-bold text-gray-900 text-lg">
+          <div class="w-8 h-8 rounded bg-slate-900 text-white flex items-center justify-center text-sm">
+            <i class="fa-solid fa-bolt"></i>
           </div>
-          <input type="password" id="loginPin" required placeholder="Enter PIN (Default: 1234)" class="w-full bg-[#161b22] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500">
+          <span>RSP POS</span>
         </div>
 
-        <button type="submit" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-2.5 rounded-lg text-sm shadow-lg shadow-purple-900/40 transition">
-          <i class="fa-solid fa-key mr-2"></i>Authenticate & Access Node
-        </button>
-      </form>
-    </div>
-  </div>
-
-  <!-- FORGOT PIN MODAL -->
-  <div id="forgotModal" class="fixed inset-0 z-50 bg-[#090d16]/90 backdrop-blur-md hidden flex items-center justify-center p-4">
-    <div class="glass-card max-w-sm w-full p-6 rounded-2xl border border-purple-500/40 space-y-4">
-      <h3 class="font-bold text-white text-lg">Reset PIN via Email OTP</h3>
-      <p class="text-xs text-gray-400">Enter registered email (e.g. mrtraders3355@gmail.com) to trigger confirmation OTP.</p>
-      
-      <div class="space-y-3">
-        <input type="email" id="forgotEmailInput" placeholder="Enter registered email..." class="w-full bg-[#161b22] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none">
-        <div id="otpSection" class="hidden space-y-2">
-          <input type="text" id="otpCodeInput" placeholder="Enter 4-digit OTP" class="w-full bg-[#161b22] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono tracking-widest text-center">
-          <input type="password" id="resetNewPassInput" placeholder="Enter New PIN Password" class="w-full bg-[#161b22] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-        </div>
+        <!-- Navigation Tabs -->
+        <nav class="hidden md:flex space-x-1 text-sm font-medium text-gray-600">
+          <button onclick="showTab('dashboard')" id="tab-dashboard" class="nav-btn active px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 border border-transparent">
+            <i class="fa-solid fa-chart-pie text-xs"></i> Dashboard
+          </button>
+          <button onclick="showTab('pos')" id="tab-pos" class="nav-btn px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 border border-transparent">
+            <i class="fa-solid fa-cash-register text-xs"></i> POS Billing
+          </button>
+          <button onclick="showTab('history')" id="tab-history" class="nav-btn px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 border border-transparent">
+            <i class="fa-solid fa-clock-rotate-left text-xs"></i> History
+          </button>
+          <button onclick="showTab('products')" id="tab-products" class="nav-btn px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 border border-transparent">
+            <i class="fa-solid fa-box text-xs"></i> Products
+          </button>
+          <button onclick="showTab('onboard')" id="tab-onboard" class="nav-btn px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 border border-transparent">
+            <i class="fa-solid fa-barcode text-xs"></i> Onboard
+          </button>
+        </nav>
       </div>
 
-      <div class="flex gap-2">
-        <button id="forgotActionBtn" onclick="requestOtp()" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded-lg text-xs transition">Send Confirmation OTP</button>
-        <button onclick="closeForgotModal()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-2 rounded-lg text-xs">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- EDIT PRODUCT MODAL -->
-  <div id="editProductModal" class="fixed inset-0 z-50 bg-[#090d16]/90 backdrop-blur-md hidden flex items-center justify-center p-4">
-    <div class="glass-card max-w-md w-full p-6 rounded-2xl border border-purple-500/40 space-y-4">
-      <h3 class="font-bold text-white text-lg">Edit Product / Stock</h3>
-      <input type="hidden" id="editSku">
-      <div class="space-y-3">
-        <div>
-          <label class="block text-xs text-gray-400 mb-1">Product Name</label>
-          <input type="text" id="editName" class="w-full bg-[#161b22] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">Price (₹)</label>
-            <input type="number" id="editPrice" class="w-full bg-[#161b22] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-          </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">Stock Level</label>
-            <input type="number" id="editStock" class="w-full bg-[#161b22] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-          </div>
-        </div>
-      </div>
-      <div class="flex gap-2 pt-2">
-        <button onclick="saveEditedProduct()" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded-lg text-xs">Save Changes</button>
-        <button onclick="closeEditModal()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-2 rounded-lg text-xs">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MAIN NAVIGATION HEADER -->
-  <header class="border-b border-purple-900/30 bg-[#0d1117]/80 sticky top-0 z-40 backdrop-blur-md">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-      <div class="flex items-center space-x-3">
-        <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center font-bold text-white shadow-lg">
-          <i class="fa-solid fa-bolt"></i>
-        </div>
-        <div>
-          <h1 class="font-bold text-white tracking-wide text-lg flex items-center gap-2">
-            REVERIE SYNAPTIC PULSE
-            <span class="text-[10px] bg-purple-900/60 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-full font-mono">NODE V3.0</span>
-          </h1>
-          <p class="text-xs text-gray-400">MR TRADERS CLOUD ERP</p>
-        </div>
-      </div>
-
-      <div class="flex items-center space-x-3">
-        <div class="hidden sm:flex items-center space-x-2 bg-[#161b22] border border-purple-800/40 px-3 py-1.5 rounded-lg">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <div class="text-left">
-            <div id="activeUserEmail" class="text-xs font-semibold text-white">mrtraders3355@gmail.com</div>
-            <div id="activeUserRole" class="text-[10px] font-mono text-purple-400">Role: Super Admin</div>
-          </div>
-        </div>
-
-        <button onclick="logout()" class="bg-red-500/10 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1">
+      <!-- User Staff & Logout -->
+      <div class="flex items-center space-x-4 text-sm">
+        <span class="text-gray-600">Staff: <strong class="text-gray-900" id="staffNameDisplay">Arunkumar</strong></span>
+        <button onclick="logout()" class="text-red-600 hover:text-red-700 font-medium flex items-center gap-1">
           <i class="fa-solid fa-right-from-bracket"></i> Logout
         </button>
       </div>
     </div>
-
-    <!-- TABS -->
-    <div class="max-w-7xl mx-auto px-4 py-2 flex space-x-2 border-t border-gray-800/60 overflow-x-auto text-sm">
-      <button onclick="showTab('pos')" id="tab-pos" class="nav-btn active px-4 py-1.5 rounded-lg border border-transparent text-gray-400 hover:text-white transition flex items-center gap-2">
-        <i class="fa-solid fa-cash-register"></i> POS Billing
-      </button>
-      <button onclick="showTab('inventory')" id="tab-inventory" class="nav-btn px-4 py-1.5 rounded-lg border border-transparent text-gray-400 hover:text-white transition flex items-center gap-2">
-        <i class="fa-solid fa-boxes-stacked"></i> Inventory
-      </button>
-      <button onclick="showTab('analytics')" id="tab-analytics" class="nav-btn px-4 py-1.5 rounded-lg border border-transparent text-gray-400 hover:text-white transition flex items-center gap-2">
-        <i class="fa-solid fa-chart-line"></i> Analytics
-      </button>
-      <button onclick="showTab('audit')" id="tab-audit" class="nav-btn px-4 py-1.5 rounded-lg border border-transparent text-gray-400 hover:text-white transition flex items-center gap-2">
-        <i class="fa-solid fa-shield-halved"></i> Audit Logs
-      </button>
-    </div>
   </header>
 
-  <!-- WORKSPACE VIEWS -->
+  <!-- MAIN APP CONTAINER -->
   <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6">
-    
-    <!-- Tab 1: POS Billing -->
-    <div id="view-pos" class="space-y-6">
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-2 glass-card rounded-xl p-5 space-y-4">
-          <div class="flex justify-between items-center border-b border-gray-800 pb-3">
-            <h3 class="font-bold text-white flex items-center gap-2"><i class="fa-solid fa-cash-register text-purple-400"></i> POS Terminal</h3>
-            <span class="text-xs font-mono text-gray-400" id="roleBadge">Role: Super Admin</span>
-          </div>
-          <input type="text" id="searchInput" oninput="filterProducts()" placeholder="Scan barcode or search products..." class="w-full bg-[#161b22] border border-gray-700 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500">
-          <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto"></div>
-        </div>
 
-        <div class="glass-card rounded-xl p-5 flex flex-col justify-between space-y-4">
+    <!-- 1. DASHBOARD VIEW -->
+    <div id="view-dashboard" class="space-y-6">
+      <div>
+        <h2 class="text-2xl font-bold text-gray-900">Welcome, Arunkumar</h2>
+        <p class="text-sm text-gray-500">Ready for today's sales?</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="card-box rounded-xl p-5 flex justify-between items-center md:col-span-1">
           <div>
-            <h3 class="font-bold text-white border-b border-gray-800 pb-3 flex justify-between items-center">
-              <span>Current Order</span>
-              <span class="text-xs font-mono text-purple-400" id="cartCount">0 items</span>
-            </h3>
-            <div id="cartItems" class="divide-y divide-gray-800 max-h-60 overflow-y-auto my-3 text-sm">
-              <p class="text-xs text-gray-500 text-center py-8">Cart is empty.</p>
+            <div class="text-xs text-gray-500 uppercase font-medium">Your Sales Today</div>
+            <div class="text-3xl font-bold text-gray-900 mt-1">₹0.00</div>
+            <div class="text-xs text-gray-400 mt-1">0 bills generated today</div>
+          </div>
+          <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-cart-shopping"></i>
+          </div>
+        </div>
+
+        <div class="card-box rounded-xl p-5 md:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <button onclick="showTab('pos')" class="text-left p-3 rounded-lg hover:bg-gray-50 border border-gray-100 transition">
+            <i class="fa-solid fa-cash-register text-blue-600 text-lg mb-2"></i>
+            <div class="font-bold text-sm text-gray-900">Start POS Billing</div>
+            <div class="text-[11px] text-gray-500">Scan items and receipts</div>
+          </button>
+          <button onclick="showTab('history')" class="text-left p-3 rounded-lg hover:bg-gray-50 border border-gray-100 transition">
+            <i class="fa-solid fa-clock-rotate-left text-indigo-600 text-lg mb-2"></i>
+            <div class="font-bold text-sm text-gray-900">Billing History</div>
+            <div class="text-[11px] text-gray-500">View past invoices</div>
+          </button>
+          <button onclick="showTab('products')" class="text-left p-3 rounded-lg hover:bg-gray-50 border border-gray-100 transition">
+            <i class="fa-solid fa-box text-emerald-600 text-lg mb-2"></i>
+            <div class="font-bold text-sm text-gray-900">Products</div>
+            <div class="text-[11px] text-gray-500">Manage catalog</div>
+          </button>
+          <button onclick="showTab('onboard')" class="text-left p-3 rounded-lg hover:bg-gray-50 border border-gray-100 transition">
+            <i class="fa-solid fa-barcode text-purple-600 text-lg mb-2"></i>
+            <div class="font-bold text-sm text-gray-900">Onboard Product</div>
+            <div class="text-[11px] text-gray-500">Add new items</div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. POS BILLING VIEW -->
+    <div id="view-pos" class="hidden space-y-6">
+      <div class="flex justify-between items-center">
+        <div>
+          <h2 class="text-xl font-bold text-gray-900">POS Billing</h2>
+          <p class="text-xs text-gray-500">Scan barcodes or search products. Shortcuts: F1 (Focus), F2 (Checkout), Esc (Clear)</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 space-y-4">
+          <div class="card-box rounded-xl p-4 space-y-3">
+            <div class="flex items-center justify-between text-xs text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
+              <span><i class="fa-solid fa-wifi mr-1"></i> Scanner Ready</span>
+              <span class="font-mono text-gray-500">USB / Bluetooth / HID</span>
+            </div>
+            <div class="flex gap-2">
+              <input type="text" id="barcodeInput" placeholder="Scan barcode or type code & press Enter..." class="flex-grow bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
+              <button onclick="addItemByBarcode()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition">Add</button>
+            </div>
+            <input type="text" id="posSearch" oninput="filterPosProducts()" placeholder="Search products by name..." class="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-900 focus:outline-none">
+          </div>
+
+          <div class="card-box rounded-xl p-4 min-h-[250px]">
+            <h3 class="font-bold text-gray-900 text-sm mb-3">Cart (<span id="cartCountNum">0</span>)</h3>
+            <div id="posCartItems" class="divide-y divide-gray-100 text-sm">
+              <p class="text-xs text-gray-400 text-center py-12">Cart is empty. Scan a barcode to start.</p>
             </div>
           </div>
-          <div class="space-y-3 pt-3 border-t border-gray-800 text-sm">
-            <div class="flex justify-between text-gray-400"><span>Subtotal</span><span id="subTotal">₹0.00</span></div>
-            <div class="flex justify-between text-gray-400"><span>GST (18%)</span><span id="taxTotal">₹0.00</span></div>
-            <div class="flex justify-between text-base font-bold text-white pt-2 border-t border-gray-800">
-              <span>Total Payable</span><span id="grandTotal" class="text-purple-400">₹0.00</span>
+        </div>
+
+        <!-- Checkout Column -->
+        <div class="card-box rounded-xl p-5 space-y-4 h-fit">
+          <h3 class="font-bold text-gray-900 border-b border-gray-100 pb-3">Checkout</h3>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Customer Mobile *</label>
+            <input type="text" placeholder="Enter 10-digit mobile number" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none">
+          </div>
+          <div class="flex rounded-lg border border-gray-300 p-0.5 bg-gray-50 text-xs font-medium text-center">
+            <button class="flex-1 py-1.5 rounded bg-blue-600 text-white shadow-sm">B2C Retail</button>
+            <button class="flex-1 py-1.5 text-gray-600 hover:text-gray-900">B2B Invoice</button>
+          </div>
+          <div class="space-y-2 pt-2 text-sm text-gray-600">
+            <div class="flex justify-between"><span>Taxable Value</span><span id="taxableVal">₹0.00</span></div>
+            <div class="flex justify-between"><span>CGST (0%)</span><span>₹0.00</span></div>
+            <div class="flex justify-between"><span>SGST (0%)</span><span>₹0.00</span></div>
+            <div class="flex justify-between items-center pt-2 border-t border-gray-200 text-base font-bold text-gray-900">
+              <span>Total</span><span id="posGrandTotal" class="text-blue-600">₹0.00</span>
             </div>
-            <button id="checkoutBtn" onclick="checkout()" class="w-full bg-purple-600 hover:bg-purple-500 font-bold py-2.5 rounded-lg text-white transition">Process Payment</button>
           </div>
+          <button onclick="completeSale()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg text-sm transition">Complete Sale & Print</button>
         </div>
       </div>
     </div>
 
-    <!-- Tab 2: Inventory -->
-    <div id="view-inventory" class="hidden space-y-6">
-      <div class="glass-card rounded-xl p-5 space-y-6">
-        
-        <!-- Inventory Actions Bar -->
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-800 pb-4">
-          <h3 class="font-bold text-white text-lg"><i class="fa-solid fa-boxes-stacked text-indigo-400 mr-2"></i>Stock Inventory Management</h3>
-          
-          <div class="flex flex-wrap gap-2">
-            <button onclick="toggleAddForm()" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2">
-              <i class="fa-solid fa-plus"></i> Add Single Product
-            </button>
-            
-            <label class="bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/40 px-3 py-2 rounded-lg text-xs font-bold cursor-pointer transition flex items-center gap-2">
-              <i class="fa-solid fa-file-arrow-up"></i> Bulk CSV Upload
-              <input type="file" id="bulkFile" accept=".csv,.json" onchange="handleBulkUpload(event)" class="hidden">
-            </label>
-
-            <!-- Admin-Only Bulk Delete Button -->
-            <button id="bulkDeleteBtn" onclick="bulkDeleteSelected()" class="bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/40 px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2">
-              <i class="fa-solid fa-trash-can"></i> Delete Selected (<span id="selectedCount">0</span>)
-            </button>
-          </div>
-        </div>
-
-        <!-- Add Single Product Form (Collapsible) -->
-        <div id="singleAddForm" class="hidden bg-[#161b22] border border-purple-500/30 p-4 rounded-xl space-y-4">
-          <h4 class="font-bold text-sm text-purple-300">Add New Item to Inventory</h4>
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
-            <input type="text" id="newSku" placeholder="SKU (e.g. SKU-3357)" class="bg-[#0d1117] border border-gray-700 rounded-lg px-3 py-2 text-xs text-white">
-            <input type="text" id="newName" placeholder="Product Name" class="bg-[#0d1117] border border-gray-700 rounded-lg px-3 py-2 text-xs text-white">
-            <input type="text" id="newCat" placeholder="Category" class="bg-[#0d1117] border border-gray-700 rounded-lg px-3 py-2 text-xs text-white">
-            <input type="number" id="newStock" placeholder="Stock Level" class="bg-[#0d1117] border border-gray-700 rounded-lg px-3 py-2 text-xs text-white">
-            <input type="number" id="newPrice" placeholder="Price (₹)" class="bg-[#0d1117] border border-gray-700 rounded-lg px-3 py-2 text-xs text-white">
-          </div>
-          <div class="flex justify-end gap-2">
-            <button onclick="addSingleProduct()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-1.5 rounded-lg text-xs font-bold">Save Product</button>
-            <button onclick="toggleAddForm()" class="bg-gray-800 text-gray-300 px-3 py-1.5 rounded-lg text-xs">Cancel</button>
-          </div>
-        </div>
-
-        <!-- Inventory Table -->
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm text-gray-300">
-            <thead class="bg-[#161b22] text-gray-400 font-mono text-xs uppercase">
-              <tr>
-                <th class="p-3 w-10"><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)"></th>
-                <th class="p-3">SKU</th>
-                <th class="p-3">Product Name</th>
-                <th class="p-3">Category</th>
-                <th class="p-3">Stock Level</th>
-                <th class="p-3">Price</th>
-                <th class="p-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="inventoryTable" class="divide-y divide-gray-800"></tbody>
-          </table>
-        </div>
+    <!-- 3. HISTORY VIEW -->
+    <div id="view-history" class="hidden space-y-6">
+      <div class="card-box rounded-xl p-5">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Billing History</h2>
+        <p class="text-sm text-gray-500">No past transactions recorded in this active session.</p>
       </div>
     </div>
 
-    <!-- Tab 3: Analytics -->
-    <div id="view-analytics" class="hidden space-y-6">
-      <div class="glass-card rounded-xl p-5">
-        <h3 class="font-bold text-white mb-4"><i class="fa-solid fa-chart-line text-emerald-400 mr-2"></i>Sales Performance</h3>
-        <canvas id="salesChart" class="max-h-80 w-full"></canvas>
+    <!-- 4. PRODUCTS CATALOG VIEW -->
+    <div id="view-products" class="hidden space-y-6">
+      <!-- Metric Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div class="card-box rounded-xl p-4">
+          <div class="text-xs text-gray-500 font-medium">TOTAL PRODUCTS</div>
+          <div class="text-2xl font-bold text-gray-900 mt-1" id="totalProductsCount">2,473</div>
+        </div>
+        <div class="card-box rounded-xl p-4 border-l-4 border-emerald-500">
+          <div class="text-xs text-gray-500 font-medium">HEALTHY</div>
+          <div class="text-2xl font-bold text-emerald-600 mt-1">978</div>
+        </div>
+        <div class="card-box rounded-xl p-4 border-l-4 border-amber-500">
+          <div class="text-xs text-gray-500 font-medium">LOW STOCK</div>
+          <div class="text-2xl font-bold text-amber-600 mt-1">660</div>
+        </div>
+        <div class="card-box rounded-xl p-4 border-l-4 border-red-500">
+          <div class="text-xs text-gray-500 font-medium">CRITICAL / OOS</div>
+          <div class="text-2xl font-bold text-red-600 mt-1">835</div>
+        </div>
+      </div>
+
+      <!-- Search & Filters -->
+      <div class="card-box rounded-xl p-4 flex flex-col md:flex-row gap-3">
+        <input type="text" id="prodSearchInput" oninput="renderProductTable()" placeholder="Search name, SKU, HSN..." class="flex-grow border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none">
+        <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-600">
+          <option>All Categories</option>
+        </select>
+        <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-600">
+          <option>All GST</option>
+        </select>
+        <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-600">
+          <option>All Statuses</option>
+        </select>
+      </div>
+
+      <!-- Product List Table -->
+      <div class="card-box rounded-xl overflow-x-auto">
+        <table class="w-full text-left text-sm text-gray-700">
+          <thead class="bg-gray-50 border-b border-gray-200 text-xs font-semibold uppercase text-gray-500">
+            <tr>
+              <th class="p-3.5">Product</th>
+              <th class="p-3.5">Category & HSN</th>
+              <th class="p-3.5">Price</th>
+              <th class="p-3.5">GST</th>
+              <th class="p-3.5">Stock</th>
+              <th class="p-3.5">Status</th>
+              <th class="p-3.5 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="productTableBody" class="divide-y divide-gray-100"></tbody>
+        </table>
       </div>
     </div>
 
-    <!-- Tab 4: Audit Logs -->
-    <div id="view-audit" class="hidden space-y-6">
-      <div class="glass-card rounded-xl p-5">
-        <h3 class="font-bold text-white mb-4"><i class="fa-solid fa-shield-halved text-purple-400 mr-2"></i>System Security Audit Logs</h3>
-        <ul id="auditList" class="space-y-3 font-mono text-xs text-gray-400">
-          <li class="bg-[#161b22] p-3 rounded-lg border border-gray-800 flex justify-between"><span>[LOG 0840] ERP System Node Started</span><span class="text-gray-500">System</span></li>
-        </ul>
+    <!-- 5. ONBOARD / SCAN VIEW -->
+    <div id="view-onboard" class="hidden space-y-6">
+      <div>
+        <h2 class="text-2xl font-bold text-gray-900">Barcode Onboarding</h2>
+        <p class="text-sm text-gray-500">Scan or enter barcodes to instantly onboard and lookup products in your inventory.</p>
+      </div>
+
+      <div class="card-box rounded-xl p-6">
+        <div class="h-64 bg-slate-900 rounded-xl flex flex-col items-center justify-center text-gray-400 space-y-2">
+          <i class="fa-solid fa-camera text-3xl"></i>
+          <p class="text-sm">Camera is inactive. Turn on to scan barcodes.</p>
+          <button class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-xs font-semibold">Start Camera</button>
+        </div>
       </div>
     </div>
 
   </main>
 
   <script>
-    const userPasswords = { admin: '1234', worker: '1234', auditor: '1234' };
-    const userProfiles = {
-      admin: { name: 'Super Admin', email: 'mrtraders3355@gmail.com', role: 'Super Admin', readOnly: false },
-      worker: { name: 'Worker / Cashier', email: 'arundon1002@gmail.com', role: 'Worker', readOnly: false },
-      auditor: { name: 'Auditor', email: 'auditor@mrtraders.com', role: 'Auditor (Read-Only)', readOnly: true }
-    };
-
-    let currentUserKey = 'admin'; // Default active admin session for seamless view
-    let generatedOtp = null;
-    let targetResetKey = null;
-    let otpStep = 1;
-
-    function handleLogin(e) {
-      if (e) e.preventDefault();
-      const userKey = document.getElementById('loginUserSelect').value;
-      const pin = document.getElementById('loginPin').value;
-
-      if (pin !== userPasswords[userKey]) {
-        alert('Invalid Security PIN!');
-        return;
-      }
-
-      currentUserKey = userKey;
-      const currentUser = userProfiles[userKey];
-      document.getElementById('loginScreen').classList.add('hidden');
-      document.getElementById('activeUserEmail').innerText = currentUser.email;
-      document.getElementById('activeUserRole').innerText = `Role: ${currentUser.role}`;
-      document.getElementById('roleBadge').innerText = `Role: ${currentUser.role}`;
-
-      const checkoutBtn = document.getElementById('checkoutBtn');
-      if (currentUser.readOnly) {
-        checkoutBtn.disabled = true;
-        checkoutBtn.innerText = 'Read-Only Mode';
-        checkoutBtn.classList.add('opacity-50', 'cursor-not-allowed');
-      } else {
-        checkoutBtn.disabled = false;
-        checkoutBtn.innerText = 'Process Payment';
-        checkoutBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-      }
-
-      renderProducts();
-      addAuditLog(`User logged in: ${currentUser.email} (${currentUser.role})`);
-    }
-
-    function logout() {
-      if (confirm('Are you sure you want to log out?')) {
-        addAuditLog(`User logged out`);
-        currentUserKey = null;
-        document.getElementById('loginPin').value = '';
-        document.getElementById('loginScreen').classList.remove('hidden');
-      }
-    }
-
-    function openForgotModal() {
-      otpStep = 1;
-      document.getElementById('forgotEmailInput').value = 'mrtraders3355@gmail.com';
-      document.getElementById('otpSection').classList.add('hidden');
-      document.getElementById('forgotActionBtn').innerText = 'Send Confirmation OTP';
-      document.getElementById('forgotModal').classList.remove('hidden');
-    }
-    function closeForgotModal() { document.getElementById('forgotModal').classList.add('hidden'); }
-
-    function requestOtp() {
-      const email = document.getElementById('forgotEmailInput').value.trim();
-      targetResetKey = Object.keys(userProfiles).find(k => userProfiles[k].email === email);
-      if (!targetResetKey) return alert('Email not recognized in system directory.');
-
-      if (otpStep === 1) {
-        generatedOtp = Math.floor(1000 + Math.random() * 9000);
-        alert(`[SIMULATED EMAIL SENT TO ${email}]\nConfirmation OTP Code: ${generatedOtp}`);
-        document.getElementById('otpSection').classList.remove('hidden');
-        document.getElementById('forgotActionBtn').innerText = 'Verify & Confirm Reset';
-        otpStep = 2;
-      } else {
-        const enteredOtp = document.getElementById('otpCodeInput').value.trim();
-        const newPass = document.getElementById('resetNewPassInput').value.trim();
-        if (enteredOtp !== generatedOtp.toString()) return alert('Invalid OTP code!');
-        if (!newPass || newPass.length < 4) return alert('New PIN must be at least 4 digits.');
-
-        userPasswords[targetResetKey] = newPass;
-        alert(`Password for ${email} successfully reset!`);
-        addAuditLog(`Password reset via OTP for ${email}`);
-        closeForgotModal();
-      }
-    }
-
     let products = [
-      { id: 'SKU-3351', name: 'L\'Oréal Paris Serum 30ml', price: 699, category: 'Skincare', stock: 142 },
-      { id: 'SKU-3352', name: 'Maybelline Matte Lipstick', price: 299, category: 'Cosmetics', stock: 89 },
-      { id: 'SKU-3353', name: 'Nivea Soft Moisturizer 200ml', price: 349, category: 'Skincare', stock: 210 },
-      { id: 'SKU-3354', name: 'Lakmé Sun Expert SPF 50', price: 450, category: 'Sun Care', stock: 65 },
-      { id: 'SKU-3355', name: 'Plum Green Tea Face Wash', price: 325, category: 'Facial Care', stock: 112 },
-      { id: 'SKU-3356', name: 'Minimalist Niacinamide 10%', price: 599, category: 'Serums', stock: 78 }
+      { id: 'SKU-1011', name: '10% Niacinamide Face Serum with 2% Zinc PCA - 30ml', category: 'Uncategorized', price: 699, gst: '18%', stock: 5, status: 'Low Stock' },
+      { id: 'SKU-1012', name: '10% Vitamin C & Calendula Barrier Boosting Glow Serum 30ml', category: 'Uncategorized', price: 799, gst: '18%', stock: 7, status: 'In Stock' },
+      { id: 'SKU-1013', name: '24 Carat Gold Cool Cream 200 g', category: 'Uncategorized', price: 230, gst: '18%', stock: 11, status: 'In Stock' },
+      { id: 'SKU-1014', name: '24K GOLD AYURVEDIC BATHING BAR & NIGHT CREAM', category: 'Uncategorized', price: 349, gst: '18%', stock: 2, status: 'Critical' },
+      { id: 'SKU-1015', name: '3 in 1 All Day Hydra Matte Mini Foundation Absolute Ivory 012', category: 'Uncategorized', price: 299, gst: '18%', stock: 2, status: 'Critical' }
     ];
 
     let cart = [];
 
     function showTab(tab) {
-      ['pos', 'inventory', 'analytics', 'audit'].forEach(t => {
+      ['dashboard', 'pos', 'history', 'products', 'onboard'].forEach(t => {
         document.getElementById(`view-${t}`).classList.add('hidden');
         document.getElementById(`tab-${t}`).classList.remove('active');
       });
       document.getElementById(`view-${tab}`).classList.remove('hidden');
       document.getElementById(`tab-${tab}`).classList.add('active');
-      if (tab === 'analytics') initChart();
+      if(tab === 'products') renderProductTable();
     }
 
-    function renderProducts(items = products) {
-      document.getElementById('productGrid').innerHTML = items.map(p => `
-        <div class="bg-[#161b22] border border-gray-800 p-3 rounded-lg flex justify-between items-center">
-          <div>
-            <div class="text-xs font-mono text-purple-400">${p.id}</div>
-            <div class="text-sm font-semibold text-white">${p.name}</div>
-            <div class="text-xs text-gray-400">₹${p.price}</div>
-          </div>
-          <button onclick="addToCart('${p.id}')" class="bg-purple-600/30 hover:bg-purple-600 text-purple-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">+ Add</button>
-        </div>
-      `).join('');
-
-      document.getElementById('inventoryTable').innerHTML = products.map(p => `
-        <tr>
-          <td class="p-3"><input type="checkbox" class="row-checkbox" value="${p.id}" onchange="updateSelectedCount()"></td>
-          <td class="p-3 font-mono text-purple-400">${p.id}</td>
-          <td class="p-3 font-semibold text-white">${p.name}</td>
-          <td class="p-3 text-gray-400">${p.category}</td>
-          <td class="p-3 font-bold ${p.stock < 80 ? 'text-amber-400' : 'text-emerald-400'}">${p.stock} units</td>
-          <td class="p-3 font-mono">₹${p.price}</td>
-          <td class="p-3 text-right space-x-1">
-            <button onclick="openEditModal('${p.id}')" class="bg-purple-500/20 hover:bg-purple-600 text-purple-300 hover:text-white px-2.5 py-1 rounded text-xs transition"><i class="fa-solid fa-pen"></i> Edit</button>
-            <button onclick="deleteSingleProduct('${p.id}')" class="bg-red-500/20 hover:bg-red-600 text-red-300 hover:text-white px-2.5 py-1 rounded text-xs transition"><i class="fa-solid fa-trash"></i> Delete</button>
+    function renderProductTable() {
+      const query = document.getElementById('prodSearchInput').value.toLowerCase();
+      const filtered = products.filter(p => p.name.toLowerCase().includes(query) || p.id.toLowerCase().includes(query));
+      
+      document.getElementById('productTableBody').innerHTML = filtered.map(p => `
+        <tr class="hover:bg-gray-50/50">
+          <td class="p-3.5">
+            <div class="font-semibold text-gray-900">${p.name}</div>
+            <div class="text-xs text-gray-400 font-mono">SKU: ${p.id}</div>
+          </td>
+          <td class="p-3.5 text-gray-600 text-xs">${p.category}</td>
+          <td class="p-3.5 font-mono">₹${p.price.toFixed(2)}</td>
+          <td class="p-3.5 text-xs text-gray-500">${p.gst} GST</td>
+          <td class="p-3.5 font-bold">${p.stock}</td>
+          <td class="p-3.5">
+            <span class="px-2.5 py-1 rounded-full text-xs font-medium ${p.status === 'In Stock' ? 'bg-emerald-50 text-emerald-600' : p.status === 'Low Stock' ? 'bg-amber-50 text-amber-600' : 'bg-red-500/10 text-red-600'}">${p.status}</span>
+          </td>
+          <td class="p-3.5 text-right space-x-2">
+            <button onclick="editProduct('${p.id}')" class="text-gray-400 hover:text-blue-600"><i class="fa-solid fa-pen"></i></button>
+            <button onclick="deleteProduct('${p.id}')" class="text-gray-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button>
           </td>
         </tr>
       `).join('');
-      updateSelectedCount();
     }
 
-    function toggleAddForm() {
-      document.getElementById('singleAddForm').classList.toggle('hidden');
-    }
-
-    function addSingleProduct() {
-      const id = document.getElementById('newSku').value.trim();
-      const name = document.getElementById('newName').value.trim();
-      const category = document.getElementById('newCat').value.trim();
-      const stock = parseInt(document.getElementById('newStock').value);
-      const price = parseFloat(document.getElementById('newPrice').value);
-
-      if (!id || !name || isNaN(stock) || isNaN(price)) {
-        return alert('Please fill in all product fields correctly.');
-      }
-
-      products.push({ id, name, category, stock, price });
-      renderProducts();
-      toggleAddForm();
-      addAuditLog(`Added new product: ${name} (${id})`);
-      alert('Product successfully added to inventory!');
-    }
-
-    function openEditModal(sku) {
-      const p = products.find(x => x.id === sku);
-      if (!p) return;
-      document.getElementById('editSku').value = p.id;
-      document.getElementById('editName').value = p.name;
-      document.getElementById('editPrice').value = p.price;
-      document.getElementById('editStock').value = p.stock;
-      document.getElementById('editProductModal').classList.remove('hidden');
-    }
-
-    function closeEditModal() { document.getElementById('editProductModal').classList.add('hidden'); }
-
-    function saveEditedProduct() {
-      const sku = document.getElementById('editSku').value;
-      const p = products.find(x => x.id === sku);
-      if (p) {
-        p.name = document.getElementById('editName').value;
-        p.price = parseFloat(document.getElementById('editPrice').value);
-        p.stock = parseInt(document.getElementById('editStock').value);
-        renderProducts();
-        closeEditModal();
-        addAuditLog(`Updated inventory item: ${p.name} (${sku})`);
-        alert('Product updated successfully!');
-      }
-    }
-
-    function deleteSingleProduct(sku) {
-      if (confirm(`Are you sure you want to delete product ${sku}?`)) {
+    function deleteProduct(sku) {
+      if(confirm('Delete product ' + sku + '?')) {
         products = products.filter(p => p.id !== sku);
-        renderProducts();
-        addAuditLog(`Deleted product SKU: ${sku}`);
-        alert('Product deleted successfully.');
+        renderProductTable();
       }
     }
 
-    function toggleSelectAll(master) {
-      const checkboxes = document.querySelectorAll('.row-checkbox');
-      checkboxes.forEach(cb => cb.checked = master.checked);
-      updateSelectedCount();
-    }
-
-    function updateSelectedCount() {
-      const checkboxes = document.querySelectorAll('.row-checkbox');
-      const checked = Array.from(checkboxes).filter(cb => cb.checked);
-      document.getElementById('selectedCount').innerText = checked.length;
-    }
-
-    function bulkDeleteSelected() {
-      const checkboxes = document.querySelectorAll('.row-checkbox:checked');
-      if (checkboxes.length === 0) return alert('No products selected for deletion.');
-
-      if (confirm(`Are you sure you want to delete ${checkboxes.length} selected product(s)?`)) {
-        const idsToDelete = Array.from(checkboxes).map(cb => cb.value);
-        products = products.filter(p => !idsToDelete.includes(p.id));
-        renderProducts();
-        addAuditLog(`Bulk deleted ${idsToDelete.length} items`);
-        alert('Selected products deleted successfully.');
+    function logout() {
+      if(confirm('Are you sure you want to log out?')) {
+        window.location.reload();
       }
     }
 
-    function handleBulkUpload(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(event) {
-        try {
-          const content = event.target.result;
-          let newItems = [];
-          if (file.name.endsWith('.json')) {
-            newItems = JSON.parse(content);
-          } else {
-            const lines = content.split('\n');
-            for (let i = 1; i < lines.length; i++) {
-              const cols = lines[i].split(',');
-              if (cols.length >= 5) {
-                newItems.push({
-                  id: cols[0].trim(),
-                  name: cols[1].trim(),
-                  category: cols[2].trim(),
-                  stock: parseInt(cols[3]),
-                  price: parseFloat(cols[4])
-                });
-              }
-            }
-          }
-          if (newItems.length > 0) {
-            products.push(...newItems);
-            renderProducts();
-            addAuditLog(`Bulk uploaded ${newItems.length} items to inventory`);
-            alert(`Successfully uploaded ${newItems.length} items!`);
-          } else {
-            alert('No valid items found in file.');
-          }
-        } catch(err) {
-          alert('Error parsing uploaded file format.');
-        }
-      };
-      reader.readAsText(file);
-    }
-
-    function addAuditLog(action) {
-      const list = document.getElementById('auditList');
-      const time = new Date().toLocaleTimeString();
-      list.innerHTML = `<li class="bg-[#161b22] p-3 rounded-lg border border-gray-800 flex justify-between"><span>[LOG] ${action}</span><span class="text-gray-500">${time}</span></li>` + list.innerHTML;
-    }
-
-    function addToCart(sku) {
-      const item = products.find(p => p.id === sku);
-      const existing = cart.find(c => c.id === sku);
-      if (existing) existing.qty++;
-      else cart.push({ ...item, qty: 1 });
-      updateCart();
-    }
-
-    function updateCart() {
-      const cartEl = document.getElementById('cartItems');
-      if (cart.length === 0) {
-        cartEl.innerHTML = '<p class="text-xs text-gray-500 text-center py-8">Cart is empty.</p>';
-        document.getElementById('cartCount').innerText = '0 items';
-        document.getElementById('subTotal').innerText = '₹0.00';
-        document.getElementById('taxTotal').innerText = '₹0.00';
-        document.getElementById('grandTotal').innerText = '₹0.00';
-        return;
-      }
-      let sub = 0, totalQty = 0;
-      cartEl.innerHTML = cart.map(item => {
-        sub += item.price * item.qty;
-        totalQty += item.qty;
-        return `<div class="py-2 flex justify-between items-center"><div><div class="font-medium text-white text-xs">${item.name}</div><div class="text-[10px] text-gray-400">₹${item.price} x ${item.qty}</div></div><span class="font-bold text-xs text-purple-300">₹${item.price * item.qty}</span></div>`;
-      }).join('');
-      const tax = sub * 0.18;
-      document.getElementById('cartCount').innerText = `${totalQty} items`;
-      document.getElementById('subTotal').innerText = `₹${sub.toFixed(2)}`;
-      document.getElementById('taxTotal').innerText = `₹${tax.toFixed(2)}`;
-      document.getElementById('grandTotal').innerText = `₹${(sub + tax).toFixed(2)}`;
-    }
-
-    function checkout() {
-      if (cart.length === 0) return alert('Cart is empty!');
-      alert('Order processed successfully!');
-      addAuditLog(`Transaction processed`);
-      cart = [];
-      updateCart();
-    }
-
-    let chartInstance = null;
-    function initChart() {
-      if (chartInstance) return;
-      const ctx = document.getElementById('salesChart').getContext('2d');
-      chartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-          datasets: [{ label: 'Sales (₹)', data: [12000, 19000, 15000, 22000, 28000, 35000, 42000], borderColor: '#8b5cf6', backgroundColor: 'rgba(139, 92, 246, 0.1)', fill: true }]
-        },
-        options: { responsive: true, plugins: { legend: { labels: { color: '#9ca3af' } } } }
-      });
-    }
-
-    renderProducts();
+    renderProductTable();
   </script>
 </body>
 </html>
