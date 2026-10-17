@@ -3,211 +3,1374 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Retail POS Billing System</title>
+  <title>RSP POS - Cloud ERP System</title>
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#1d4ed8',
+              600: '#1e40af',
+              700: '#1d3557',
+              800: '#0f1f38',
+              900: '#081426',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
   <style>
+    /* Thermal receipt print styles */
     @media print {
-      body * { visibility: hidden; }
-      #printable-receipt, #printable-receipt * { visibility: visible; }
-      #printable-receipt { position: absolute; left: 0; top: 0; width: 100%; }
+      body * {
+        visibility: hidden !important;
+      }
+      #printable-receipt-modal,
+      #printable-receipt-modal * {
+        visibility: visible !important;
+      }
+      #printable-receipt-modal {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        background: white !important;
+        box-shadow: none !important;
+        display: block !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+
+    /* Custom smooth scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Laser scanner animation */
+    @keyframes scanAnimation {
+      0% { top: 6%; opacity: 0.8; }
+      50% { top: 90%; opacity: 1; }
+      100% { top: 6%; opacity: 0.8; }
+    }
+    .scanner-line {
+      position: absolute;
+      left: 8%;
+      width: 84%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #ef4444, #f87171, #ef4444, transparent);
+      box-shadow: 0 0 10px #ef4444;
+      animation: scanAnimation 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
   </style>
 </head>
-<body class="bg-slate-100 font-sans text-slate-800 h-screen flex flex-col">
+<body class="bg-[#f8fafc] text-slate-800 font-sans antialiased h-screen flex flex-col overflow-hidden select-none">
 
-  <!-- Header -->
-  <header class="bg-indigo-700 text-white px-6 py-3 flex justify-between items-center shadow-md">
-    <div>
-      <h1 class="text-xl font-bold tracking-wide">SwiftPOS Billing</h1>
-      <p class="text-xs text-indigo-200">Terminal #01 | Cashier: Arun Kumar</p>
+  <!-- =============================== -->
+  <!-- 1. TOP GLOBAL NAVIGATION BAR   -->
+  <!-- =============================== -->
+  <header class="bg-white border-b border-slate-200 h-14 flex items-center justify-between px-5 shrink-0 z-30">
+    <!-- Left: Brand & Nav Tabs -->
+    <div class="flex items-center space-x-6">
+      <!-- Brand Logo -->
+      <div class="flex items-center space-x-2.5 cursor-pointer" onclick="switchTab('dashboard')">
+        <div class="w-8 h-8 rounded-lg bg-[#0a192f] flex items-center justify-center text-white font-bold shadow-sm">
+          <i data-lucide="scan" class="w-4 h-4 text-sky-400"></i>
+        </div>
+        <span class="font-bold text-slate-900 tracking-tight text-lg">RSP POS</span>
+      </div>
+
+      <!-- Navigation Tabs matching screenshot -->
+      <nav class="flex items-center space-x-1.5" id="nav-container">
+        <button id="nav-dashboard" onclick="switchTab('dashboard')"
+          class="flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition text-white bg-slate-800">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+          <span>Dashboard</span>
+        </button>
+
+        <button id="nav-billing" onclick="switchTab('billing')"
+          class="flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+          <i data-lucide="receipt" class="w-4 h-4"></i>
+          <span>POS Billing</span>
+        </button>
+
+        <button id="nav-history" onclick="switchTab('history')"
+          class="flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+          <i data-lucide="clock" class="w-4 h-4"></i>
+          <span>History</span>
+        </button>
+
+        <button id="nav-products" onclick="switchTab('products')"
+          class="flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+          <i data-lucide="box" class="w-4 h-4"></i>
+          <span>Products</span>
+        </button>
+
+        <button id="nav-onboard" onclick="switchTab('onboard')"
+          class="flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+          <i data-lucide="barcode" class="w-4 h-4"></i>
+          <span>Onboard</span>
+        </button>
+      </nav>
     </div>
-    <div class="flex items-center space-x-3">
-      <span class="bg-indigo-800 text-xs px-3 py-1 rounded-full border border-indigo-400" id="live-time"></span>
-      <button onclick="resetCart()" class="bg-rose-500 hover:bg-rose-600 text-xs px-3 py-1.5 rounded font-medium transition">Clear Order</button>
+
+    <!-- Right: Staff Profile & Logout / Quick Action -->
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center text-sm">
+        <span class="text-slate-400 mr-1.5 font-normal">Staff:</span>
+        <span class="font-semibold text-slate-800" id="current-staff-name">Arunkumar</span>
+      </div>
+
+      <button onclick="handleLogout()"
+        class="flex items-center space-x-1 text-sm font-medium text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2.5 py-1 rounded transition">
+        <i data-lucide="log-out" class="w-4 h-4 text-rose-500"></i>
+        <span>Logout</span>
+      </button>
     </div>
   </header>
 
-  <!-- Main Work Area -->
-  <main class="flex-1 flex overflow-hidden p-4 gap-4">
-    
-    <!-- Left Column: Product Catalog & Fast Search -->
-    <section class="w-7/12 flex flex-col bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-      <!-- Search & Filters -->
-      <div class="p-4 border-b border-slate-200 bg-slate-50 flex gap-3">
-        <input 
-          type="text" 
-          id="search-input" 
-          placeholder="Scan barcode or type item name..." 
-          class="flex-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-          oninput="renderCatalog()"
-          autofocus
-        />
-        <select id="category-filter" onchange="renderCatalog()" class="border px-3 py-2 rounded-md bg-white text-sm">
-          <option value="All">All Categories</option>
-          <option value="Electronics">Electronics</option>
-          <option value="Groceries">Groceries</option>
-          <option value="Stationery">Stationery</option>
-        </select>
+  <!-- ============================================== -->
+  <!-- 2. MAIN APPLICATION VIEWS CONTAINER          -->
+  <!-- ============================================== -->
+  <main class="flex-1 overflow-y-auto bg-[#f8fafc] relative">
+
+    <!-- -------------------------------------------- -->
+    <!-- VIEW A: EMPLOYEE DASHBOARD (/employee-dashboard) -->
+    <!-- -------------------------------------------- -->
+    <section id="view-dashboard" class="p-8 max-w-6xl mx-auto space-y-7">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900">Welcome, Arunkumar</h1>
+        <p class="text-slate-500 text-sm mt-0.5">Ready for today's sales?</p>
       </div>
 
-      <!-- Catalog Grid -->
-      <div id="catalog-grid" class="flex-1 p-4 grid grid-cols-3 gap-3 overflow-y-auto">
-        <!-- Rendered via JS -->
+      <!-- Top Primary Metrics + Quick Action Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
+        <!-- Sales Today Hero Card -->
+        <div class="md:col-span-5 bg-gradient-to-br from-slate-100 to-slate-200/80 border border-slate-200/90 rounded-2xl p-6 relative flex flex-col justify-between shadow-sm min-h-[160px]">
+          <div>
+            <div class="text-xs font-semibold uppercase tracking-wider text-slate-500">Your Sales Today</div>
+            <div class="text-4xl font-extrabold text-slate-900 tracking-tight mt-3 font-mono" id="dash-sales-today">₹0.00</div>
+          </div>
+          <div class="mt-4 flex items-center justify-between text-xs text-slate-600 font-medium">
+            <span id="dash-bills-count">0 bills generated today</span>
+            <div class="w-10 h-10 rounded-full bg-slate-300/60 flex items-center justify-center text-slate-700">
+              <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4 Grid Action Tiles matching screenshot -->
+        <div class="md:col-span-7 grid grid-cols-2 gap-4">
+          <!-- Card 1: Start POS Billing -->
+          <div onclick="switchTab('billing')"
+            class="bg-white border border-slate-200 hover:border-slate-300 hover:shadow-md rounded-2xl p-4 cursor-pointer transition flex items-start justify-between group">
+            <div>
+              <h3 class="font-bold text-slate-900 text-sm group-hover:text-blue-600 transition">Start POS Billing</h3>
+              <p class="text-xs text-slate-500 mt-1 leading-relaxed">Scan items and generate receipts</p>
+            </div>
+            <div class="p-2 bg-slate-50 rounded-lg border border-slate-100 text-slate-700 group-hover:bg-blue-50 group-hover:text-blue-600 transition">
+              <i data-lucide="receipt" class="w-5 h-5"></i>
+            </div>
+          </div>
+
+          <!-- Card 2: Billing History -->
+          <div onclick="switchTab('history')"
+            class="bg-white border border-slate-200 hover:border-slate-300 hover:shadow-md rounded-2xl p-4 cursor-pointer transition flex items-start justify-between group">
+            <div>
+              <h3 class="font-bold text-slate-900 text-sm group-hover:text-blue-600 transition">Billing History</h3>
+              <p class="text-xs text-slate-500 mt-1 leading-relaxed">View and reprint past invoices</p>
+            </div>
+            <div class="p-2 bg-slate-50 rounded-lg border border-slate-100 text-slate-700 group-hover:bg-blue-50 group-hover:text-blue-600 transition">
+              <i data-lucide="clock" class="w-5 h-5"></i>
+            </div>
+          </div>
+
+          <!-- Card 3: Products -->
+          <div onclick="switchTab('products')"
+            class="bg-white border border-slate-200 hover:border-slate-300 hover:shadow-md rounded-2xl p-4 cursor-pointer transition flex items-start justify-between group">
+            <div>
+              <h3 class="font-bold text-slate-900 text-sm group-hover:text-blue-600 transition">Products</h3>
+              <p class="text-xs text-slate-500 mt-1 leading-relaxed">Browse and manage product catalog</p>
+            </div>
+            <div class="p-2 bg-slate-50 rounded-lg border border-slate-100 text-slate-700 group-hover:bg-blue-50 group-hover:text-blue-600 transition">
+              <i data-lucide="package" class="w-5 h-5"></i>
+            </div>
+          </div>
+
+          <!-- Card 4: Onboard Product -->
+          <div onclick="switchTab('onboard')"
+            class="bg-white border border-slate-200 hover:border-slate-300 hover:shadow-md rounded-2xl p-4 cursor-pointer transition flex items-start justify-between group">
+            <div>
+              <h3 class="font-bold text-slate-900 text-sm group-hover:text-blue-600 transition">Onboard Product</h3>
+              <p class="text-xs text-slate-500 mt-1 leading-relaxed">Scan barcodes and add new products</p>
+            </div>
+            <div class="p-2 bg-slate-50 rounded-lg border border-slate-100 text-slate-700 group-hover:bg-blue-50 group-hover:text-blue-600 transition">
+              <i data-lucide="scan-line" class="w-5 h-5"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Recent Sales Preview on Dashboard -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 mt-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <h2 class="font-bold text-sm text-slate-800">Recent Terminal Activity</h2>
+          <span class="text-xs text-emerald-600 font-semibold flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Terminal Online
+          </span>
+        </div>
+        <div id="dash-recent-list" class="divide-y divide-slate-100 text-xs text-slate-600 mt-2">
+          <!-- dynamic render -->
+        </div>
       </div>
     </section>
 
-    <!-- Right Column: Current Bill / Cart -->
-    <section class="w-5/12 flex flex-col bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-      <div class="px-5 py-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-        <h2 class="font-bold text-slate-700">Current Order</h2>
-        <span class="text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded font-mono" id="order-id">ORD-1001</span>
+    <!-- -------------------------------------------- -->
+    <!-- VIEW B: POS BILLING TERMINAL (/employee-billing) -->
+    <!-- -------------------------------------------- -->
+    <section id="view-billing" class="hidden h-full flex flex-col p-4 overflow-hidden">
+      <!-- Title & Shortcut Bar -->
+      <div class="flex items-center justify-between mb-3 shrink-0">
+        <div>
+          <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">POS Billing</h1>
+          <p class="text-xs text-slate-500 mt-0.5">
+            Scan barcodes or search products. Shortcuts: 
+            <span class="font-mono font-semibold bg-slate-200/80 px-1 py-0.5 rounded text-slate-700">F1</span> (Focus), 
+            <span class="font-mono font-semibold bg-slate-200/80 px-1 py-0.5 rounded text-slate-700">F2</span> (Checkout), 
+            <span class="font-mono font-semibold bg-slate-200/80 px-1 py-0.5 rounded text-slate-700">Esc</span> (Clear)
+          </p>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button onclick="toggleFullScreen()" title="Toggle Fullscreen" class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100">
+            <i data-lucide="maximize-2" class="w-4 h-4"></i>
+          </button>
+        </div>
       </div>
 
-      <!-- Cart Item List -->
-      <div class="flex-1 overflow-y-auto p-4 divide-y divide-slate-100" id="cart-container">
-        <!-- Cart Items populate here -->
-      </div>
+      <!-- Workspace 2-Column Grid -->
+      <div class="flex-1 grid grid-cols-12 gap-4 overflow-hidden">
 
-      <!-- Billing Totals & Checkout -->
-      <div class="p-4 bg-slate-50 border-t border-slate-200 space-y-2">
-        <div class="flex justify-between text-sm text-slate-600">
-          <span>Subtotal</span>
-          <span font-mono id="subtotal">₹0.00</span>
+        <!-- Left 8 Cols: Scan Bar & Cart Table -->
+        <div class="col-span-12 lg:col-span-8 flex flex-col bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+
+          <!-- Scanner Bar Header -->
+          <div class="p-3.5 border-b border-slate-100 bg-slate-50/70 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <!-- Scanner Badge -->
+              <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200 text-[11px] font-medium text-slate-600">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 -ml-2.5"></span>
+                <span>Scanner Ready</span>
+              </div>
+              <span class="text-[10px] text-slate-400 font-mono">USB / Bluetooth / HID</span>
+            </div>
+
+            <!-- Barcode Scan Input Box -->
+            <div class="flex gap-2">
+              <div class="relative flex-1">
+                <i data-lucide="scan" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                <input 
+                  type="text" 
+                  id="barcode-input"
+                  placeholder="Scan barcode or type code & press Enter" 
+                  class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm bg-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition"
+                  onkeydown="handleBarcodeKey(event)"
+                />
+              </div>
+              <button 
+                onclick="addBarcodeManually()" 
+                class="px-5 py-2 bg-[#0c2340] hover:bg-slate-800 text-white text-xs font-semibold rounded-lg shadow-sm transition">
+                Add
+              </button>
+            </div>
+
+            <!-- Autocomplete / Name Search with suggestions dropdown -->
+            <div class="relative">
+              <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+              <input 
+                type="text" 
+                id="product-search-input"
+                placeholder="Search products by name or SKU..." 
+                class="w-full pl-10 pr-4 py-1.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                oninput="handleSearchSuggestions(event)"
+              />
+              <!-- Suggestions Box -->
+              <div id="search-suggestions" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-20 max-h-56 overflow-y-auto divide-y divide-slate-100">
+                <!-- suggestions populated by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Cart Table Container -->
+          <div class="flex-1 overflow-y-auto flex flex-col">
+            <div class="px-4 py-2.5 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between text-xs font-bold text-slate-700">
+              <span id="cart-header-title">Cart (0)</span>
+              <button onclick="clearCurrentCart()" class="text-rose-600 hover:text-rose-700 font-medium text-[11px]">Clear All</button>
+            </div>
+
+            <!-- Empty State or Item Table -->
+            <div id="cart-content-area" class="flex-1 flex flex-col justify-center items-center p-8">
+              <div class="text-center text-slate-400">
+                <i data-lucide="shopping-bag" class="w-12 h-12 stroke-[1.2] mx-auto mb-2 text-slate-300"></i>
+                <p class="text-sm font-normal text-slate-500">Cart is empty. Scan a barcode to start.</p>
+                <p class="text-xs text-slate-400 mt-1">Use barcode gun or type code like <code class="font-mono bg-slate-100 px-1 py-0.5 rounded text-slate-600">8904417772046</code></p>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="flex justify-between text-sm text-slate-600">
-          <span>GST (18% Total: 9% CGST + 9% SGST)</span>
-          <span font-mono id="tax-total">₹0.00</span>
+
+        <!-- Right 4 Cols: Checkout & Payment Section -->
+        <div class="col-span-12 lg:col-span-4 bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col p-4 justify-between overflow-y-auto">
+          <div class="space-y-4">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+              <h2 class="font-bold text-base text-slate-800">Checkout</h2>
+              <span class="text-xs font-mono text-slate-400" id="current-order-serial">ORD-9021</span>
+            </div>
+
+            <!-- Customer Mobile Input -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">
+                Customer Mobile <span class="text-rose-500">*</span>
+              </label>
+              <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">+91</span>
+                <input 
+                  type="tel" 
+                  id="checkout-mobile"
+                  maxlength="10"
+                  placeholder="Enter 10-digit mobile number" 
+                  value="9876543210"
+                  class="w-full pl-11 pr-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono"
+                />
+              </div>
+            </div>
+
+            <!-- Invoice Type Toggle -->
+            <div>
+              <div class="grid grid-cols-2 p-1 bg-slate-100 rounded-lg text-xs font-semibold">
+                <button 
+                  id="btn-invoice-b2c" 
+                  onclick="setInvoiceType('B2C')"
+                  class="py-1.5 rounded-md bg-blue-600 text-white shadow-sm transition">
+                  B2C Retail
+                </button>
+                <button 
+                  id="btn-invoice-b2b" 
+                  onclick="setInvoiceType('B2B')"
+                  class="py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1">
+                  <i data-lucide="building" class="w-3.5 h-3.5"></i>
+                  <span>B2B Invoice</span>
+                </button>
+              </div>
+
+              <!-- B2B specific inputs (collapsible) -->
+              <div id="b2b-extra-fields" class="hidden mt-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg space-y-2 text-xs">
+                <div>
+                  <label class="block text-[11px] font-medium text-slate-600 mb-0.5">GSTIN Number</label>
+                  <input type="text" id="b2b-gstin" placeholder="33AAAAA0000A1Z5" class="w-full p-1.5 border rounded uppercase font-mono text-xs">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-medium text-slate-600 mb-0.5">Company Legal Name</label>
+                  <input type="text" id="b2b-company" placeholder="ABC Retail Enterprises Ltd" class="w-full p-1.5 border rounded text-xs">
+                </div>
+              </div>
+            </div>
+
+            <!-- Financial Calculation Table -->
+            <div class="space-y-2 pt-2 border-t border-slate-100 text-xs">
+              <div class="flex justify-between text-slate-600">
+                <span>Taxable Value</span>
+                <span class="font-mono" id="val-taxable">₹0.00</span>
+              </div>
+              <div class="flex justify-between text-slate-600">
+                <span>CGST (9%)</span>
+                <span class="font-mono" id="val-cgst">₹0.00</span>
+              </div>
+              <div class="flex justify-between text-slate-600">
+                <span>SGST (9%)</span>
+                <span class="font-mono" id="val-sgst">₹0.00</span>
+              </div>
+              <div class="flex justify-between items-center text-slate-600 pt-1">
+                <span>Discount ₹</span>
+                <input 
+                  type="number" 
+                  id="val-discount" 
+                  value="0" 
+                  min="0"
+                  class="w-24 px-2 py-1 text-right border border-slate-300 rounded font-mono text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                  oninput="recalculateBillingTotals()"
+                />
+              </div>
+            </div>
+
+            <!-- Big Grand Total -->
+            <div class="pt-3 border-t-2 border-slate-200 flex justify-between items-baseline">
+              <span class="font-extrabold text-slate-800 text-sm">Total</span>
+              <span class="text-2xl font-black text-slate-900 font-mono tracking-tight" id="val-grand-total">₹0.00</span>
+            </div>
+
+            <!-- Payment Mode Selection & Paid Amount -->
+            <div class="space-y-2 pt-1">
+              <div class="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 mb-1">Mode</label>
+                  <select id="pay-mode" onchange="handlePaymentModeChange()" class="w-full p-2 border border-slate-300 rounded-lg bg-white text-xs font-medium focus:ring-1 focus:ring-blue-500">
+                    <option value="Cash">Cash</option>
+                    <option value="UPI / QR">UPI / QR</option>
+                    <option value="Card">Card</option>
+                    <option value="Split">Split</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 mb-1">Paid ₹</label>
+                  <input 
+                    type="number" 
+                    id="pay-amount-input" 
+                    value="0.00" 
+                    class="w-full p-2 border border-slate-300 rounded-lg text-right font-mono text-xs font-semibold focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Checkout Trigger Button -->
+          <div class="mt-4 pt-3 border-t border-slate-100">
+            <button 
+              id="btn-complete-sale"
+              onclick="processCompleteSale()"
+              class="w-full py-3 bg-[#4d7ca8] hover:bg-[#3b6690] active:scale-[0.99] text-white font-bold rounded-lg shadow text-xs tracking-wide uppercase transition flex items-center justify-center gap-2">
+              <i data-lucide="printer" class="w-4 h-4"></i>
+              <span>Complete Sale & Print</span>
+            </button>
+          </div>
         </div>
-        <div class="flex justify-between items-center text-sm text-slate-600">
-          <span>Discount (₹)</span>
+
+      </div>
+    </section>
+
+    <!-- -------------------------------------------- -->
+    <!-- VIEW C: BILLING HISTORY (/employee-history)  -->
+    <!-- -------------------------------------------- -->
+    <section id="view-history" class="hidden p-8 max-w-6xl mx-auto space-y-6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Billing History</h1>
+          <p class="text-slate-500 text-xs mt-0.5">View your past 100 tax invoices</p>
+        </div>
+
+        <!-- Search input box matching screenshot -->
+        <div class="relative w-full md:w-80">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
           <input 
-            type="number" 
-            id="discount-input" 
-            value="0" 
-            min="0" 
-            class="w-20 px-2 py-0.5 border rounded text-right font-mono"
-            oninput="calculateTotals()"
+            type="text" 
+            id="history-search-input"
+            placeholder="Search invoice # or customer" 
+            oninput="renderHistoryList()"
+            class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
           />
         </div>
-        <div class="flex justify-between text-lg font-bold text-slate-900 border-t border-slate-300 pt-2">
-          <span>Grand Total</span>
-          <span class="text-indigo-700 font-mono text-xl" id="grand-total">₹0.00</span>
-        </div>
+      </div>
 
-        <!-- Payment Mode & Checkout Actions -->
-        <div class="pt-2 grid grid-cols-3 gap-2">
-          <button onclick="setPaymentMethod('Cash')" id="btn-cash" class="py-1.5 text-xs font-semibold rounded border border-indigo-600 bg-indigo-50 text-indigo-700">Cash</button>
-          <button onclick="setPaymentMethod('UPI')" id="btn-upi" class="py-1.5 text-xs font-semibold rounded border border-slate-300 text-slate-600 hover:bg-slate-100">UPI / QR</button>
-          <button onclick="setPaymentMethod('Card')" id="btn-card" class="py-1.5 text-xs font-semibold rounded border border-slate-300 text-slate-600 hover:bg-slate-100">Card</button>
+      <!-- Invoices Card Container -->
+      <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden min-h-[300px]">
+        <div id="history-container" class="divide-y divide-slate-100">
+          <!-- Populated by JS -->
         </div>
-
-        <button 
-          onclick="processBill()" 
-          class="w-full mt-2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-md shadow flex justify-center items-center gap-2 transition"
-        >
-          <span>Complete Sale & Print Bill</span>
-        </button>
       </div>
     </section>
+
+    <!-- -------------------------------------------- -->
+    <!-- VIEW D: PRODUCTS & INVENTORY (/employee-products) -->
+    <!-- -------------------------------------------- -->
+    <section id="view-products" class="hidden p-8 max-w-7xl mx-auto space-y-6">
+      <!-- Title & Action Buttons -->
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Products & Inventory</h1>
+          <p class="text-slate-500 text-xs mt-0.5">Manage stock, prices, GST and thresholds</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="downloadCSVExport()" class="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 flex items-center gap-1.5 shadow-sm">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span>Download CSV</span>
+          </button>
+          <button onclick="switchTab('onboard', 'bulk')" class="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 flex items-center gap-1.5 shadow-sm">
+            <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
+            <span>Bulk Upload CSV</span>
+          </button>
+          <button onclick="openAdjustStockModal()" class="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 flex items-center gap-1.5 shadow-sm">
+            <i data-lucide="sliders" class="w-3.5 h-3.5"></i>
+            <span>Adjust Stock</span>
+          </button>
+          <button onclick="openAddProductModal()" class="px-4 py-1.5 text-xs font-semibold text-white bg-[#0a2342] hover:bg-slate-800 rounded-lg shadow flex items-center gap-1.5">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <span>+ Add Product</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Stat Badges matching Screenshot 4 -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <!-- Stat 1: Total Products -->
+        <div class="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm">
+          <div class="text-2xl font-extrabold text-slate-900 font-mono" id="stat-total-prods">2473</div>
+          <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-1">TOTAL PRODUCTS</div>
+        </div>
+        <!-- Stat 2: Healthy -->
+        <div class="bg-emerald-50/70 border border-emerald-100 rounded-xl p-4 text-center shadow-sm">
+          <div class="text-2xl font-extrabold text-emerald-600 font-mono" id="stat-healthy-prods">978</div>
+          <div class="text-[11px] font-bold text-emerald-600 uppercase tracking-wider mt-1">HEALTHY</div>
+        </div>
+        <!-- Stat 3: Low Stock -->
+        <div class="bg-amber-50/70 border border-amber-100 rounded-xl p-4 text-center shadow-sm">
+          <div class="text-2xl font-extrabold text-amber-600 font-mono" id="stat-low-prods">660</div>
+          <div class="text-[11px] font-bold text-amber-600 uppercase tracking-wider mt-1">LOW STOCK</div>
+        </div>
+        <!-- Stat 4: Critical / OOS -->
+        <div class="bg-rose-50/70 border border-rose-100 rounded-xl p-4 text-center shadow-sm">
+          <div class="text-2xl font-extrabold text-rose-600 font-mono" id="stat-critical-prods">835</div>
+          <div class="text-[11px] font-bold text-rose-600 uppercase tracking-wider mt-1">CRITICAL / OOS</div>
+        </div>
+      </div>
+
+      <!-- Filters & Search Bar -->
+      <div class="bg-white border border-slate-200 rounded-xl p-3 flex flex-col md:flex-row items-center justify-between gap-3 shadow-sm">
+        <div class="relative w-full md:w-96">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+          <input 
+            type="text" 
+            id="products-search-term"
+            placeholder="Search name, SKU, HSN..." 
+            oninput="renderProductTable()"
+            class="w-full pl-9 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div class="flex items-center gap-2 w-full md:w-auto">
+          <select id="filter-category" onchange="renderProductTable()" class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700">
+            <option value="All">All Categories</option>
+            <option value="Skincare">Skincare</option>
+            <option value="Cosmetics">Cosmetics</option>
+            <option value="Uncategorized">Uncategorized</option>
+          </select>
+
+          <select id="filter-gst" onchange="renderProductTable()" class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700">
+            <option value="All">All GST</option>
+            <option value="18">18% GST</option>
+            <option value="12">12% GST</option>
+            <option value="5">5% GST</option>
+            <option value="0">0% GST</option>
+          </select>
+
+          <select id="filter-status" onchange="renderProductTable()" class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700">
+            <option value="All">All Statuses</option>
+            <option value="In Stock">In Stock / Healthy</option>
+            <option value="Low Stock">Low Stock</option>
+            <option value="Critical">Critical</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Products Inventory Table -->
+      <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="border-b border-slate-200 bg-slate-50/80 font-bold text-slate-600 uppercase text-[11px] tracking-wider">
+              <th class="py-3 px-4">Product</th>
+              <th class="py-3 px-4">Category & HSN</th>
+              <th class="py-3 px-4 text-right">Price</th>
+              <th class="py-3 px-4 text-center">GST</th>
+              <th class="py-3 px-4 text-center">Stock</th>
+              <th class="py-3 px-4 text-center">Status</th>
+              <th class="py-3 px-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="products-table-body" class="divide-y divide-slate-100">
+            <!-- populated by JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- -------------------------------------------- -->
+    <!-- VIEW E: ONBOARD PRODUCT (/employee-onboard-product) -->
+    <!-- -------------------------------------------- -->
+    <section id="view-onboard" class="hidden p-8 max-w-6xl mx-auto space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Barcode Onboarding</h1>
+          <p class="text-slate-500 text-xs mt-0.5">Scan or enter barcodes to instantly onboard and lookup products in your inventory</p>
+        </div>
+        <button onclick="switchTab('products')" class="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-1.5 shadow-sm">
+          <i data-lucide="package" class="w-3.5 h-3.5"></i>
+          <span>View All Products</span>
+        </button>
+      </div>
+
+      <!-- Sub Tabs: Onboard/Scan vs Bulk CSV -->
+      <div class="flex space-x-2 border-b border-slate-200">
+        <button id="subtab-scan-btn" onclick="switchOnboardSubTab('scan')" class="pb-2.5 px-3 text-xs font-semibold border-b-2 border-blue-600 text-blue-600 flex items-center gap-1.5">
+          <i data-lucide="scan" class="w-3.5 h-3.5"></i>
+          <span>Onboard / Scan</span>
+        </button>
+        <button id="subtab-csv-btn" onclick="switchOnboardSubTab('csv')" class="pb-2.5 px-3 text-xs font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
+          <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
+          <span>Bulk CSV Import</span>
+        </button>
+      </div>
+
+      <!-- Sub-Tab 1: Camera & Manual Onboarding Screen -->
+      <div id="subtab-scan-content" class="grid grid-cols-12 gap-5">
+        <!-- Left: Camera Scanner Box + Manual input -->
+        <div class="col-span-12 lg:col-span-8 space-y-4">
+          <!-- Video / Scanner Box -->
+          <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="font-bold text-slate-800 text-sm">Barcode Scanner</h3>
+                <p class="text-[11px] text-slate-400">Point camera at a product barcode</p>
+              </div>
+              <button id="camera-toggle-btn" onclick="toggleCameraSimulation()" class="px-3 py-1.5 bg-[#0e2747] hover:bg-slate-800 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5">
+                <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+                <span id="camera-btn-text">Start Camera</span>
+              </button>
+            </div>
+
+            <!-- Scanner Viewport Container -->
+            <div id="scanner-viewport" class="w-full h-64 bg-slate-950 rounded-xl relative overflow-hidden flex flex-col items-center justify-center text-slate-400">
+              <div id="scanner-inactive-state" class="text-center space-y-2">
+                <i data-lucide="camera-off" class="w-8 h-8 mx-auto text-slate-600"></i>
+                <p class="text-xs text-slate-400">Camera is inactive. Turn on to scan barcodes.</p>
+              </div>
+
+              <!-- Active simulation frame -->
+              <div id="scanner-active-state" class="hidden absolute inset-0 flex flex-col items-center justify-center">
+                <div class="w-64 h-36 border-2 border-dashed border-sky-400/70 rounded-lg relative flex items-center justify-center bg-sky-950/20">
+                  <div class="scanner-line"></div>
+                  <span class="text-[11px] font-mono text-sky-200 tracking-wider">ALIGN BARCODE HERE</span>
+                </div>
+                <div class="mt-3 flex gap-2">
+                  <button onclick="simulateScanBarcode('8904417772046')" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-200 px-2 py-1 rounded">Simulate Scan: Face Serum</button>
+                  <button onclick="simulateScanBarcode('890330005857')" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-200 px-2 py-1 rounded">Simulate Scan: Foundation</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Enter Barcode Manually Form -->
+          <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+            <h4 class="text-xs font-semibold text-slate-700 mb-2 flex items-center gap-1.5">
+              <i data-lucide="keyboard" class="w-3.5 h-3.5 text-slate-400"></i>
+              <span>Enter Barcode Manually</span>
+            </h4>
+            <div class="flex gap-2">
+              <input 
+                type="text" 
+                id="onboard-manual-barcode"
+                placeholder="Type or paste barcode digits..." 
+                class="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button onclick="onboardLookupBarcode()" class="px-5 py-2 bg-[#557c9c] hover:bg-[#436480] text-white text-xs font-bold rounded-lg transition">
+                Look Up
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Scan Session History & Quick Tips -->
+        <div class="col-span-12 lg:col-span-4 space-y-4">
+          <!-- Session Scans -->
+          <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm min-h-[160px]">
+            <h3 class="font-bold text-xs text-slate-800 mb-2">Scan Session History</h3>
+            <div id="session-scan-list" class="space-y-1.5 text-xs text-slate-500">
+              <div class="text-center py-6 text-slate-400">
+                <i data-lucide="scan" class="w-6 h-6 mx-auto mb-1 opacity-40"></i>
+                <p class="text-xs">No scans in this session</p>
+                <p class="text-[10px]">Scanned barcodes will show here</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tips Card matching Screenshot 5 -->
+          <div class="bg-sky-50/60 border border-sky-100 rounded-xl p-4 space-y-2 text-xs">
+            <div class="font-bold text-slate-800 flex items-center gap-1.5">
+              <i data-lucide="help-circle" class="w-4 h-4 text-sky-600"></i>
+              <span>Quick Onboarding Tips</span>
+            </div>
+            <ul class="space-y-1.5 text-slate-600 text-[11px] list-disc list-inside">
+              <li>Point the camera directly at a product barcode to automatically look up and open the creator dialog.</li>
+              <li>No camera? Type or paste the barcode in the input box and press Enter.</li>
+              <li>Hardware barcode scanner guns work natively! Keep this tab active, and scans will instantly process.</li>
+              <li>If a barcode exists, it opens details for editing or viewing current stock levels.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub-Tab 2: Bulk CSV Import Screen matching Screenshot 6 -->
+      <div id="subtab-csv-content" class="hidden space-y-4">
+        <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-base font-bold text-slate-900">Bulk CSV Product Uploader</h2>
+              <p class="text-xs text-slate-500 mt-0.5">Upload a list of barcodes to resolve registries and import in bulk.</p>
+            </div>
+            <button onclick="triggerCSVFileInput()" class="px-4 py-2 bg-[#0d2442] text-white text-xs font-semibold rounded-lg hover:bg-slate-800 shadow flex items-center gap-1.5">
+              <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+              <span>Upload CSV File</span>
+            </button>
+            <input type="file" id="csv-file-input" class="hidden" accept=".csv" onchange="handleCSVFileSelected(event)">
+          </div>
+
+          <!-- Drag and Drop Box -->
+          <div class="border-2 border-dashed border-slate-200 rounded-xl p-12 text-center flex flex-col items-center justify-center bg-slate-50/40">
+            <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-2">
+              <i data-lucide="file-text" class="w-6 h-6"></i>
+            </div>
+            <h3 class="font-bold text-sm text-slate-700">No CSV file loaded</h3>
+            <p class="text-xs text-slate-400 max-w-sm mt-1 leading-relaxed">
+              Upload a CSV file containing at least a <strong class="text-slate-600">barcode</strong> column. You can also supply optional columns like name, brand, category, hsn, and gst_percent.
+            </p>
+            <button onclick="downloadSampleCSV()" class="mt-4 text-xs text-blue-600 hover:underline font-medium">
+              Download Sample Template CSV
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
 
-  <!-- Hidden Thermal Invoice Template for Printing -->
-  <div id="printable-receipt" class="hidden font-mono text-xs p-4 max-w-xs mx-auto border">
-    <div class="text-center mb-3">
-      <h2 class="text-base font-bold">RETAIL STORE MART</h2>
-      <p>GSTIN: 29AAAAA0000A1Z5</p>
-      <p>Bengaluru, Karnataka</p>
-      <p>================================</p>
-    </div>
-    <div class="flex justify-between text-[11px] mb-2">
-      <span id="rcpt-order">ORD: #1001</span>
-      <span id="rcpt-date"></span>
-    </div>
-    <div class="border-b border-black pb-1 mb-2 font-semibold flex justify-between">
-      <span>Item</span>
-      <span>Qty x Price</span>
-      <span>Total</span>
-    </div>
-    <div id="rcpt-items" class="space-y-1 mb-2"></div>
-    <div class="border-t border-black pt-2 space-y-1">
-      <div class="flex justify-between"><span>Subtotal:</span><span id="rcpt-sub"></span></div>
-      <div class="flex justify-between"><span>CGST (9%):</span><span id="rcpt-cgst"></span></div>
-      <div class="flex justify-between"><span>SGST (9%):</span><span id="rcpt-sgst"></span></div>
-      <div class="flex justify-between"><span>Discount:</span><span id="rcpt-disc"></span></div>
-      <div class="flex justify-between font-bold text-sm border-t border-black pt-1">
-        <span>Grand Total:</span><span id="rcpt-total"></span>
+  <!-- ============================================== -->
+  <!-- 3. MODALS (Add Product, Receipt Print, Login)  -->
+  <!-- ============================================== -->
+
+  <!-- MODAL: ADD / EDIT PRODUCT -->
+  <div id="modal-product" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="font-bold text-base text-slate-900" id="product-modal-title">Add New Product</h3>
+        <button onclick="closeProductModal()" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
       </div>
-      <div class="flex justify-between pt-1"><span>Payment Mode:</span><span id="rcpt-mode"></span></div>
-    </div>
-    <div class="text-center mt-4">
-      <p>Thank you for shopping with us!</p>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Product Title *</label>
+          <input type="text" id="m-prod-name" placeholder="e.g. 10% Vitamin C Glow Serum 30ml" class="w-full px-3 py-2 border rounded-lg focus:ring-1 focus:ring-blue-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Barcode / SKU *</label>
+            <input type="text" id="m-prod-sku" placeholder="8904417772046" class="w-full px-3 py-2 border rounded-lg font-mono focus:ring-1 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">HSN Code</label>
+            <input type="text" id="m-prod-hsn" placeholder="33049910" class="w-full px-3 py-2 border rounded-lg font-mono focus:ring-1 focus:ring-blue-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Price (₹) *</label>
+            <input type="number" id="m-prod-price" placeholder="499" class="w-full px-3 py-2 border rounded-lg font-mono focus:ring-1 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">GST %</label>
+            <select id="m-prod-gst" class="w-full px-2 py-2 border rounded-lg bg-white">
+              <option value="18">18%</option>
+              <option value="12">12%</option>
+              <option value="5">5%</option>
+              <option value="0">0%</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Initial Stock</label>
+            <input type="number" id="m-prod-stock" placeholder="25" class="w-full px-3 py-2 border rounded-lg font-mono focus:ring-1 focus:ring-blue-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Category</label>
+          <select id="m-prod-category" class="w-full px-3 py-2 border rounded-lg bg-white">
+            <option value="Skincare">Skincare</option>
+            <option value="Cosmetics">Cosmetics</option>
+            <option value="Uncategorized">Uncategorized</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+        <button onclick="closeProductModal()" class="px-4 py-2 border rounded-lg text-slate-600 hover:bg-slate-50 text-xs font-semibold">Cancel</button>
+        <button onclick="saveProductModal()" class="px-5 py-2 bg-[#0c2443] hover:bg-slate-800 text-white rounded-lg text-xs font-bold shadow">Save Product</button>
+      </div>
     </div>
   </div>
 
+  <!-- MODAL: ADJUST STOCK -->
+  <div id="modal-adjust-stock" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between border-b pb-2">
+        <h3 class="font-bold text-sm text-slate-900">Adjust Inventory Stock</h3>
+        <button onclick="closeAdjustStockModal()" class="text-slate-400"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Select Product</label>
+          <select id="adj-product-select" class="w-full p-2 border rounded-lg bg-white text-xs"></select>
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Stock Adjustment (+ / - units)</label>
+          <input type="number" id="adj-stock-delta" placeholder="e.g. 10 or -5" class="w-full p-2 border rounded-lg font-mono">
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeAdjustStockModal()" class="px-3 py-1.5 border rounded-lg text-xs">Cancel</button>
+        <button onclick="saveStockAdjustment()" class="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold">Apply Adjustment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: THERMAL RECEIPT / INVOICE PREVIEW -->
+  <div id="printable-receipt-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative border border-slate-200">
+      <!-- Close button on top-right (hidden during print) -->
+      <button onclick="closeReceiptModal()" class="no-print absolute right-4 top-4 text-slate-400 hover:text-slate-600">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <!-- Thermal Printable Receipt Layout -->
+      <div class="font-mono text-xs text-slate-800 leading-tight">
+        <div class="text-center pb-3 border-b border-dashed border-slate-300">
+          <h2 class="text-base font-extrabold text-slate-900">RSP CLOUD STORE</h2>
+          <p class="text-[11px] text-slate-500">MR TRADERS ERP NODE V3.0</p>
+          <p class="text-[10px] text-slate-400">GSTIN: 33AABCT9981K1ZP | PH: +91 9876543210</p>
+          <p class="text-[10px] text-slate-400">Dharmapuri Main Road, Tamil Nadu</p>
+        </div>
+
+        <div class="py-2.5 border-b border-dashed border-slate-300 space-y-1 text-[11px]">
+          <div class="flex justify-between">
+            <span>Invoice: <strong id="rcpt-num">#INV-9021</strong></span>
+            <span id="rcpt-date">17/10/2026, 6:49 PM</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Customer: <span id="rcpt-phone">9876543210</span></span>
+            <span id="rcpt-type" class="uppercase font-bold text-slate-700">B2C Retail</span>
+          </div>
+          <div id="rcpt-b2b-info" class="hidden pt-1 text-[10px] border-t border-dotted">
+            <div>Company: <span id="rcpt-b2b-company">-</span></div>
+            <div>GSTIN: <span id="rcpt-b2b-gstin">-</span></div>
+          </div>
+        </div>
+
+        <!-- Receipt items list -->
+        <table class="w-full text-left my-2 text-[11px]">
+          <thead>
+            <tr class="border-b border-slate-200 font-semibold text-slate-600">
+              <th class="py-1">Item</th>
+              <th class="py-1 text-center">Qty</th>
+              <th class="py-1 text-right">Rate</th>
+              <th class="py-1 text-right">Amt</th>
+            </tr>
+          </thead>
+          <tbody id="rcpt-items-list" class="divide-y divide-slate-100">
+            <!-- items -->
+          </tbody>
+        </table>
+
+        <!-- Receipt totals -->
+        <div class="border-t border-dashed border-slate-300 pt-2 space-y-1 text-[11px]">
+          <div class="flex justify-between">
+            <span>Taxable Amount</span>
+            <span class="font-mono" id="rcpt-taxable">₹0.00</span>
+          </div>
+          <div class="flex justify-between">
+            <span>CGST (9%)</span>
+            <span class="font-mono" id="rcpt-cgst">₹0.00</span>
+          </div>
+          <div class="flex justify-between">
+            <span>SGST (9%)</span>
+            <span class="font-mono" id="rcpt-sgst">₹0.00</span>
+          </div>
+          <div class="flex justify-between text-slate-500">
+            <span>Discount</span>
+            <span class="font-mono" id="rcpt-discount">-₹0.00</span>
+          </div>
+          <div class="flex justify-between font-extrabold text-sm border-t border-dashed border-slate-400 pt-1 text-slate-900">
+            <span>Net Payable:</span>
+            <span class="font-mono" id="rcpt-grand-total">₹0.00</span>
+          </div>
+          <div class="flex justify-between pt-1 text-[10px] text-slate-500">
+            <span>Payment Mode:</span>
+            <span class="font-semibold text-slate-700" id="rcpt-paymode">Cash</span>
+          </div>
+        </div>
+
+        <div class="text-center pt-4 border-t border-dashed border-slate-300 text-[10px] text-slate-400">
+          <p>*** Thank You For Shopping With Us! ***</p>
+          <p>Powered by RSP Cloud ERP Node v3.0</p>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="no-print mt-5 flex gap-2">
+        <button onclick="window.print()" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs flex items-center justify-center gap-1.5 shadow">
+          <i data-lucide="printer" class="w-4 h-4"></i>
+          <span>Print Thermal Receipt</span>
+        </button>
+        <button onclick="closeReceiptModal()" class="px-4 py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold rounded-lg text-xs">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: LOGIN / AUTH SCREEN (Screenshot 7 Replica) -->
+  <div id="modal-login" class="hidden fixed inset-0 z-50 bg-slate-900 flex items-stretch">
+    <!-- Left Hero Brand Panel -->
+    <div class="hidden lg:flex lg:w-1/2 bg-[#061833] relative flex-col justify-between p-16 text-white overflow-hidden">
+      <!-- Background subtle dot pattern -->
+      <div class="absolute inset-0 opacity-15" style="background-image: radial-gradient(#38bdf8 1px, transparent 1px); background-size: 24px 24px;"></div>
+
+      <div class="relative z-10">
+        <div class="flex items-center space-x-2 text-white">
+          <div class="w-9 h-9 rounded-lg bg-red-600 flex items-center justify-center text-white font-bold text-xs shadow-lg">
+            RSP
+          </div>
+          <div>
+            <h2 class="font-extrabold text-lg tracking-tight">RSP ERP System</h2>
+            <p class="text-[11px] text-sky-300">Cloud Business Suite</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="relative z-10 space-y-6 max-w-lg">
+        <h1 class="text-4xl font-extrabold tracking-tight leading-tight">
+          Run your entire business from one beautiful dashboard.
+        </h1>
+        <p class="text-slate-300 text-sm leading-relaxed">
+          Barcode billing, GST invoices, inventory, payments and analytics — all in real time.
+        </p>
+
+        <div class="space-y-3.5 pt-4">
+          <div class="flex items-center space-x-3 text-sm text-slate-200">
+            <div class="w-8 h-8 rounded-lg bg-sky-950/80 border border-sky-800 flex items-center justify-center text-sky-400">
+              <i data-lucide="scan" class="w-4 h-4"></i>
+            </div>
+            <span>Lightning-fast POS with barcode scanner support</span>
+          </div>
+          <div class="flex items-center space-x-3 text-sm text-slate-200">
+            <div class="w-8 h-8 rounded-lg bg-sky-950/80 border border-sky-800 flex items-center justify-center text-sky-400">
+              <i data-lucide="shield-check" class="w-4 h-4"></i>
+            </div>
+            <span>Secure multi-tenant cloud, isolated per business</span>
+          </div>
+          <div class="flex items-center space-x-3 text-sm text-slate-200">
+            <div class="w-8 h-8 rounded-lg bg-sky-950/80 border border-sky-800 flex items-center justify-center text-sky-400">
+              <i data-lucide="activity" class="w-4 h-4"></i>
+            </div>
+            <span>Live analytics & GST-ready invoices</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="relative z-10 text-xs text-slate-500 font-mono">
+        RSP Cloud ERP Node V3.0 — mr-traders-cloud-erp.vercel.app
+      </div>
+    </div>
+
+    <!-- Right Login Card Panel -->
+    <div class="w-full lg:w-1/2 bg-white flex items-center justify-center p-6 relative">
+      <div class="max-w-md w-full bg-white p-8 rounded-2xl shadow-xl border border-slate-100 space-y-6">
+        <!-- Sign in / Create account tabs -->
+        <div class="grid grid-cols-2 p-1 bg-slate-100 rounded-lg text-xs font-semibold text-center">
+          <button class="py-1.5 rounded-md bg-white text-slate-900 shadow-sm font-bold">Sign in</button>
+          <button class="py-1.5 rounded-md text-slate-500 hover:text-slate-800">Create account</button>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Email</label>
+            <input 
+              type="email" 
+              id="login-email" 
+              value="arundon1002@gmail.com" 
+              class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Password</label>
+            <input 
+              type="password" 
+              id="login-pass" 
+              value="••••••••••••" 
+              class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none"
+            />
+          </div>
+
+          <button 
+            onclick="performLogin()"
+            class="w-full py-2.5 bg-[#0a274c] hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm transition">
+            Sign in
+          </button>
+
+          <div class="flex justify-between items-center text-[11px] text-slate-400 pt-1">
+            <a href="#" class="hover:underline">Resend verification?</a>
+            <a href="#" class="hover:underline">Forgot password?</a>
+          </div>
+
+          <div class="pt-4 border-t border-slate-100 text-center">
+            <span class="text-xs text-slate-400">Platform administrator? <a href="#" onclick="performLogin()" class="text-blue-600 font-medium hover:underline">Sign in here &rarr;</a></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICATION TOAST CONTAINER -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+
+  <!-- ============================================== -->
+  <!-- 4. CORE APPLICATION JAVASCRIPT LOGIC           -->
+  <!-- ============================================== -->
   <script>
-    // Sample Inventory Store
-    const products = [
-      { id: 'SKU01', name: 'Wireless Mouse', price: 650, category: 'Electronics' },
-      { id: 'SKU02', name: 'Mechanical Keyboard', price: 2200, category: 'Electronics' },
-      { id: 'SKU03', name: 'USB-C Cable 1m', price: 299, category: 'Electronics' },
-      { id: 'SKU04', name: 'Notebook A5 Ruled', price: 80, category: 'Stationery' },
-      { id: 'SKU05', name: 'Gel Pen (Box of 10)', price: 150, category: 'Stationery' },
-      { id: 'SKU06', name: 'Premium Coffee 200g', price: 340, category: 'Groceries' },
-      { id: 'SKU07', name: 'Green Tea Bags 25s', price: 210, category: 'Groceries' },
-      { id: 'SKU08', name: 'Cashew Nuts 250g', price: 420, category: 'Groceries' }
+    /* ----------------------------------------------------
+       Default Initial Products matching Screenshot 4
+    ---------------------------------------------------- */
+    const DEFAULT_PRODUCTS = [
+      {
+        id: 'SKU-8904417772046',
+        barcode: '8904417772046',
+        name: '10% Niacinamide Face Serum with 2% Zinc PCA - 30ml',
+        category: 'Uncategorized',
+        hsn: '33049910',
+        price: 499.00,
+        gst: 18,
+        stock: 5,
+        threshold: 10,
+        status: 'Low Stock'
+      },
+      {
+        id: 'SKU-8904417772053',
+        barcode: '8904417772053',
+        name: '10% Vitamin C & Calendula Barrier Boosting — Glow Serum 30ml',
+        category: 'Uncategorized',
+        hsn: '33049910',
+        price: 549.00,
+        gst: 18,
+        stock: 7,
+        threshold: 5,
+        status: 'In Stock'
+      },
+      {
+        id: 'SKU-8904417772550',
+        barcode: '8904417772550',
+        name: '100ml Gentle Hydrating Cleanser',
+        category: 'Uncategorized',
+        hsn: '33049990',
+        price: 299.00,
+        gst: 18,
+        stock: 11,
+        threshold: 5,
+        status: 'In Stock'
+      },
+      {
+        id: 'SKU-0904423020655',
+        barcode: '0904423020655',
+        name: '2% Niacinamide Face Wash | 100 ml',
+        category: 'Uncategorized',
+        hsn: '33049990',
+        price: 349.00,
+        gst: 18,
+        stock: 36,
+        threshold: 10,
+        status: 'In Stock'
+      },
+      {
+        id: 'SKU-1034',
+        barcode: '1034',
+        name: '24 Carat Gold Cool Cream 200 g',
+        category: 'Uncategorized',
+        hsn: '33049910',
+        price: 230.00,
+        gst: 18,
+        stock: 11,
+        threshold: 5,
+        status: 'In Stock'
+      },
+      {
+        id: 'SKU-8903300020456',
+        barcode: '8903300020456',
+        name: '24K GOLD AYURVEDIC BATHING BAR & NIGHT CREAM',
+        category: 'Uncategorized',
+        hsn: '34011110',
+        price: 399.00,
+        gst: 18,
+        stock: 2,
+        threshold: 10,
+        status: 'Critical'
+      },
+      {
+        id: 'SKU-890330005850',
+        barcode: '890330005850',
+        name: '3 in 1 All Day Hydra Matte Mini Foundation Absolute Ivory 012',
+        category: 'Cosmetics',
+        hsn: '33049920',
+        price: 249.00,
+        gst: 18,
+        stock: 2,
+        threshold: 5,
+        status: 'Critical'
+      },
+      {
+        id: 'SKU-890330005857',
+        barcode: '890330005857',
+        name: '3 in 1 All Day Hydra Matte Mini Foundation Caramel natural 023',
+        category: 'Cosmetics',
+        hsn: '33049920',
+        price: 249.00,
+        gst: 18,
+        stock: 5,
+        threshold: 10,
+        status: 'Low Stock'
+      },
+      {
+        id: 'SKU-890330005735',
+        barcode: '890330005735',
+        name: '3 in 1 All Day Hydra Matte Mini Foundation Medium Natural 022',
+        category: 'Cosmetics',
+        hsn: '33049920',
+        price: 249.00,
+        gst: 18,
+        stock: 4,
+        threshold: 8,
+        status: 'Low Stock'
+      },
+      {
+        id: 'SKU-890330005728',
+        barcode: '890330005728',
+        name: '3 in 1 All Day Hydra Matte Mini Foundation Rose Ivory 011',
+        category: 'Cosmetics',
+        hsn: '33049920',
+        price: 249.00,
+        gst: 18,
+        stock: 4,
+        threshold: 8,
+        status: 'Low Stock'
+      },
+      {
+        id: 'SKU-890330005720',
+        barcode: '890330005720',
+        name: '3 in 1 All Day Hydra Matte Mini Foundation Warm Natural 021',
+        category: 'Cosmetics',
+        hsn: '33049920',
+        price: 249.00,
+        gst: 18,
+        stock: 2,
+        threshold: 6,
+        status: 'Critical'
+      }
     ];
 
+    /* ----------------------------------------------------
+       State Holders
+    ---------------------------------------------------- */
+    let products = [];
     let cart = [];
-    let paymentMethod = 'Cash';
+    let invoices = [];
+    let currentInvoiceType = 'B2C'; // 'B2C' or 'B2B'
+    let cameraActive = false;
+    let scanSessionHistory = [];
 
-    // Clock
-    setInterval(() => {
-      document.getElementById('live-time').innerText = new Date().toLocaleTimeString();
-    }, 1000);
+    // LocalStorage keys
+    const STORAGE_KEY_PRODS = 'rsp_pos_products_v3';
+    const STORAGE_KEY_INVOICES = 'rsp_pos_invoices_v3';
 
-    // Render Catalog
-    function renderCatalog() {
-      const search = document.getElementById('search-input').value.toLowerCase();
-      const category = document.getElementById('category-filter').value;
-      const grid = document.getElementById('catalog-grid');
+    // Initialize State
+    function initApp() {
+      // Load products
+      const savedProds = localStorage.getItem(STORAGE_KEY_PRODS);
+      if (savedProds) {
+        try {
+          products = JSON.parse(savedProds);
+        } catch(e) {
+          products = [...DEFAULT_PRODUCTS];
+        }
+      } else {
+        products = [...DEFAULT_PRODUCTS];
+        saveProductsToStorage();
+      }
 
-      grid.innerHTML = '';
-      const filtered = products.filter(p => {
-        const matchesCat = category === 'All' || p.category === category;
-        const matchesSearch = p.name.toLowerCase().includes(search) || p.id.toLowerCase().includes(search);
-        return matchesCat && matchesSearch;
+      // Load invoices
+      const savedInvoices = localStorage.getItem(STORAGE_KEY_INVOICES);
+      if (savedInvoices) {
+        try {
+          invoices = JSON.parse(savedInvoices);
+        } catch(e) {
+          invoices = [];
+        }
+      }
+
+      // Setup Keyboard shortcuts
+      setupKeyShortcuts();
+
+      // Render initial Views
+      updateDashboardStats();
+      renderCart();
+      renderHistoryList();
+      renderProductTable();
+      populateAdjustStockDropdown();
+
+      // Render Lucide icons
+      lucide.createIcons();
+    }
+
+    function saveProductsToStorage() {
+      localStorage.setItem(STORAGE_KEY_PRODS, JSON.stringify(products));
+    }
+
+    function saveInvoicesToStorage() {
+      localStorage.setItem(STORAGE_KEY_INVOICES, JSON.stringify(invoices));
+    }
+
+    /* ----------------------------------------------------
+       Tab Navigation
+    ---------------------------------------------------- */
+    function switchTab(tabId, subparam = '') {
+      const views = ['dashboard', 'billing', 'history', 'products', 'onboard'];
+      
+      views.forEach(v => {
+        const viewEl = document.getElementById(`view-${v}`);
+        const navBtn = document.getElementById(`nav-${v}`);
+        if (!viewEl || !navBtn) return;
+
+        if (v === tabId) {
+          viewEl.classList.remove('hidden');
+          // active style
+          navBtn.className = "flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-sm font-semibold transition text-white bg-slate-900 shadow-sm";
+        } else {
+          viewEl.classList.add('hidden');
+          // inactive style
+          navBtn.className = "flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition";
+        }
       });
 
-      filtered.forEach(p => {
-        const card = document.createElement('div');
-        card.className = "border rounded-lg p-3 bg-white hover:border-indigo-500 hover:shadow-md cursor-pointer transition flex flex-col justify-between";
-        card.onclick = () => addToCart(p.id);
-        card.innerHTML = `
-          <div>
-            <span class="text-[10px] uppercase font-bold text-slate-400 font-mono">${p.id}</span>
-            <h3 class="font-semibold text-sm text-slate-800 leading-snug">${p.name}</h3>
-            <span class="text-xs text-slate-500">${p.category}</span>
-          </div>
-          <div class="mt-2 text-indigo-700 font-bold font-mono">₹${p.price.toFixed(2)}</div>
-        `;
-        grid.appendChild(card);
+      if (tabId === 'billing') {
+        setTimeout(() => document.getElementById('barcode-input')?.focus(), 150);
+      }
+
+      if (tabId === 'onboard' && subparam === 'bulk') {
+        switchOnboardSubTab('csv');
+      }
+
+      // Re-trigger icon render for visible tab
+      lucide.createIcons();
+    }
+
+    /* ----------------------------------------------------
+       Global Keyboard Shortcuts (F1, F2, Esc)
+    ---------------------------------------------------- */
+    function setupKeyShortcuts() {
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'F1') {
+          e.preventDefault();
+          switchTab('billing');
+          document.getElementById('barcode-input')?.focus();
+        } else if (e.key === 'F2') {
+          e.preventDefault();
+          if (cart.length > 0) {
+            processCompleteSale();
+          } else {
+            showToast('Scan at least one product first', 'error');
+          }
+        } else if (e.key === 'Escape') {
+          closeReceiptModal();
+          closeProductModal();
+          closeAdjustStockModal();
+          document.getElementById('search-suggestions').classList.add('hidden');
+        }
       });
     }
 
-    // Add to Cart
-    function addToCart(productId) {
-      const existing = cart.find(item => item.id === productId);
+    /* ----------------------------------------------------
+       POS Billing & Cart System
+    ---------------------------------------------------- */
+    function handleBarcodeKey(event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        addBarcodeManually();
+      }
+    }
+
+    function addBarcodeManually() {
+      const input = document.getElementById('barcode-input');
+      const code = input.value.trim();
+      if (!code) return;
+
+      const product = products.find(p => p.barcode === code || p.id.toLowerCase() === code.toLowerCase());
+      if (product) {
+        addToCart(product);
+        input.value = '';
+        showToast(`Added: ${product.name.substring(0, 24)}...`);
+      } else {
+        showToast(`Barcode "${code}" not found. Onboard first!`, 'error');
+      }
+    }
+
+    function addToCart(product) {
+      const existing = cart.find(item => item.id === product.id);
       if (existing) {
         existing.qty += 1;
       } else {
-        const product = products.find(p => p.id === productId);
-        cart.push({ ...product, qty: 1 });
+        cart.push({
+          id: product.id,
+          barcode: product.barcode,
+          name: product.name,
+          price: product.price,
+          gst: product.gst || 18,
+          qty: 1
+        });
       }
       renderCart();
     }
 
-    // Update Quantity
-    function updateQty(id, delta) {
+    function updateCartItemQty(id, delta) {
       const item = cart.find(i => i.id === id);
       if (!item) return;
       item.qty += delta;
@@ -217,110 +1380,909 @@
       renderCart();
     }
 
-    // Render Cart
+    function removeCartItem(id) {
+      cart = cart.filter(i => i.id !== id);
+      renderCart();
+      showToast('Item removed from cart');
+    }
+
+    function clearCurrentCart() {
+      if (cart.length === 0) return;
+      cart = [];
+      document.getElementById('val-discount').value = 0;
+      renderCart();
+      showToast('Cart cleared', 'info');
+    }
+
     function renderCart() {
-      const container = document.getElementById('cart-container');
-      container.innerHTML = '';
+      const container = document.getElementById('cart-content-area');
+      const headerTitle = document.getElementById('cart-header-title');
+      const totalItems = cart.reduce((acc, i) => acc + i.qty, 0);
+      headerTitle.innerText = `Cart (${totalItems})`;
 
       if (cart.length === 0) {
-        container.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-slate-400 text-sm">Cart is empty. Select items to bill.</div>`;
-        calculateTotals();
+        container.innerHTML = `
+          <div class="text-center text-slate-400 py-16">
+            <i data-lucide="shopping-bag" class="w-12 h-12 stroke-[1.2] mx-auto mb-2 text-slate-300"></i>
+            <p class="text-sm font-normal text-slate-500">Cart is empty. Scan a barcode to start.</p>
+            <p class="text-xs text-slate-400 mt-1">Use barcode gun or type code like <code class="font-mono bg-slate-100 px-1 py-0.5 rounded text-slate-600">8904417772046</code></p>
+          </div>
+        `;
+        recalculateBillingTotals();
+        lucide.createIcons();
         return;
       }
 
+      let tableHtml = `
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="border-b border-slate-200 bg-slate-50 font-semibold text-slate-500 text-[11px] uppercase tracking-wider">
+              <th class="py-2.5 px-3">Product Name</th>
+              <th class="py-2.5 px-2 text-center">Qty</th>
+              <th class="py-2.5 px-2 text-right">Price</th>
+              <th class="py-2.5 px-2 text-center">GST</th>
+              <th class="py-2.5 px-3 text-right">Total</th>
+              <th class="py-2.5 px-2 text-center w-8"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+      `;
+
       cart.forEach(item => {
-        const row = document.createElement('div');
-        row.className = "py-2 flex justify-between items-center";
-        row.innerHTML = `
-          <div class="flex-1 pr-2">
-            <h4 class="text-sm font-medium text-slate-800 leading-tight">${item.name}</h4>
-            <span class="text-xs text-slate-500 font-mono">₹${item.price.toFixed(2)} each</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <button onclick="updateQty('${item.id}', -1)" class="w-6 h-6 rounded bg-slate-200 text-slate-700 font-bold flex items-center justify-center hover:bg-slate-300">-</button>
-            <span class="w-6 text-center font-mono text-sm">${item.qty}</span>
-            <button onclick="updateQty('${item.id}', 1)" class="w-6 h-6 rounded bg-slate-200 text-slate-700 font-bold flex items-center justify-center hover:bg-slate-300">+</button>
-          </div>
-          <div class="w-20 text-right font-mono font-semibold text-slate-800">
-            ₹${(item.price * item.qty).toFixed(2)}
-          </div>
+        const lineTotal = item.price * item.qty;
+        tableHtml += `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="py-2.5 px-3">
+              <div class="font-semibold text-slate-900 leading-snug">${item.name}</div>
+              <div class="text-[10px] text-slate-400 font-mono">BARCODE: ${item.barcode}</div>
+            </td>
+            <td class="py-2.5 px-2 text-center">
+              <div class="inline-flex items-center border border-slate-200 rounded-md bg-white">
+                <button onclick="updateCartItemQty('${item.id}', -1)" class="w-6 h-6 flex items-center justify-center text-slate-600 hover:bg-slate-100 text-xs font-bold">-</button>
+                <span class="w-6 text-center font-mono font-semibold text-slate-800">${item.qty}</span>
+                <button onclick="updateCartItemQty('${item.id}', 1)" class="w-6 h-6 flex items-center justify-center text-slate-600 hover:bg-slate-100 text-xs font-bold">+</button>
+              </div>
+            </td>
+            <td class="py-2.5 px-2 text-right font-mono text-slate-600">₹${item.price.toFixed(2)}</td>
+            <td class="py-2.5 px-2 text-center">
+              <span class="bg-slate-100 text-slate-700 text-[10px] px-1.5 py-0.5 rounded font-mono">${item.gst}%</span>
+            </td>
+            <td class="py-2.5 px-3 text-right font-mono font-bold text-slate-900">₹${lineTotal.toFixed(2)}</td>
+            <td class="py-2.5 px-2 text-center">
+              <button onclick="removeCartItem('${item.id}')" class="text-rose-400 hover:text-rose-600 p-1">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </td>
+          </tr>
         `;
-        container.appendChild(row);
       });
 
-      calculateTotals();
+      tableHtml += `</tbody></table>`;
+      container.innerHTML = tableHtml;
+
+      recalculateBillingTotals();
+      lucide.createIcons();
     }
 
-    // Compute GST & Net Totals
-    function calculateTotals() {
-      const subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
-      const discount = parseFloat(document.getElementById('discount-input').value) || 0;
-      const gstRate = 0.18; // 18% standard GST
-      const tax = (subtotal - discount > 0) ? (subtotal - discount) * gstRate : 0;
-      const grandTotal = Math.max(0, (subtotal - discount) + tax);
+    function recalculateBillingTotals() {
+      // Calculate taxable value and GST breakdown
+      let totalAmountBeforeTax = 0;
+      let totalGstAmount = 0;
 
-      document.getElementById('subtotal').innerText = `₹${subtotal.toFixed(2)}`;
-      document.getElementById('tax-total').innerText = `₹${tax.toFixed(2)}`;
-      document.getElementById('grand-total').innerText = `₹${grandTotal.toFixed(2)}`;
+      cart.forEach(item => {
+        const itemGross = item.price * item.qty;
+        // In retail Indian POS, prices are often inclusive of GST:
+        // Base = Gross / (1 + GST rate)
+        const rate = item.gst / 100;
+        const taxable = itemGross / (1 + rate);
+        const tax = itemGross - taxable;
 
-      return { subtotal, discount, tax, grandTotal };
+        totalAmountBeforeTax += taxable;
+        totalGstAmount += tax;
+      });
+
+      const discount = parseFloat(document.getElementById('val-discount')?.value || 0) || 0;
+      const subtotalGross = cart.reduce((acc, i) => acc + (i.price * i.qty), 0);
+      const grandTotal = Math.max(0, subtotalGross - discount);
+
+      const cgst = totalGstAmount / 2;
+      const sgst = totalGstAmount / 2;
+
+      document.getElementById('val-taxable').innerText = `₹${(grandTotal > 0 ? (totalAmountBeforeTax - discount) : 0).toFixed(2)}`;
+      document.getElementById('val-cgst').innerText = `₹${cgst.toFixed(2)}`;
+      document.getElementById('val-sgst').innerText = `₹${sgst.toFixed(2)}`;
+      document.getElementById('val-grand-total').innerText = `₹${grandTotal.toFixed(2)}`;
+
+      const payInput = document.getElementById('pay-amount-input');
+      if (payInput) {
+        payInput.value = grandTotal.toFixed(2);
+      }
+
+      return {
+        taxable: Math.max(0, totalAmountBeforeTax - discount),
+        cgst,
+        sgst,
+        discount,
+        grandTotal
+      };
     }
 
-    function setPaymentMethod(method) {
-      paymentMethod = method;
-      ['Cash', 'UPI', 'Card'].forEach(m => {
-        const btn = document.getElementById(`btn-${m.toLowerCase()}`);
-        if (m === method) {
-          btn.className = "py-1.5 text-xs font-semibold rounded border border-indigo-600 bg-indigo-50 text-indigo-700";
-        } else {
-          btn.className = "py-1.5 text-xs font-semibold rounded border border-slate-300 text-slate-600 hover:bg-slate-100";
+    function setInvoiceType(type) {
+      currentInvoiceType = type;
+      const btnB2C = document.getElementById('btn-invoice-b2c');
+      const btnB2B = document.getElementById('btn-invoice-b2b');
+      const b2bBox = document.getElementById('b2b-extra-fields');
+
+      if (type === 'B2C') {
+        btnB2C.className = "py-1.5 rounded-md bg-blue-600 text-white shadow-sm transition";
+        btnB2B.className = "py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1";
+        b2bBox.classList.add('hidden');
+      } else {
+        btnB2B.className = "py-1.5 rounded-md bg-blue-600 text-white shadow-sm transition flex items-center justify-center gap-1";
+        btnB2C.className = "py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition";
+        b2bBox.classList.remove('hidden');
+      }
+    }
+
+    function handlePaymentModeChange() {
+      const mode = document.getElementById('pay-mode').value;
+      showToast(`Payment Mode: ${mode}`, 'info');
+    }
+
+    /* Autocomplete Product Search */
+    function handleSearchSuggestions(e) {
+      const q = e.target.value.toLowerCase().trim();
+      const suggestionsBox = document.getElementById('search-suggestions');
+
+      if (!q) {
+        suggestionsBox.classList.add('hidden');
+        return;
+      }
+
+      const matches = products.filter(p => p.name.toLowerCase().includes(q) || p.barcode.includes(q)).slice(0, 5);
+      if (matches.length === 0) {
+        suggestionsBox.innerHTML = `<div class="p-3 text-xs text-slate-400 text-center">No products found matching "${q}"</div>`;
+        suggestionsBox.classList.remove('hidden');
+        return;
+      }
+
+      suggestionsBox.innerHTML = matches.map(p => `
+        <div onclick="selectSearchProduct('${p.id}')" class="p-2.5 hover:bg-slate-50 cursor-pointer flex justify-between items-center transition">
+          <div>
+            <div class="text-xs font-semibold text-slate-800">${p.name}</div>
+            <div class="text-[10px] text-slate-400 font-mono">Barcode: ${p.barcode} • Stock: ${p.stock}</div>
+          </div>
+          <div class="font-mono font-bold text-xs text-blue-600">₹${p.price.toFixed(2)}</div>
+        </div>
+      `).join('');
+
+      suggestionsBox.classList.remove('hidden');
+    }
+
+    function selectSearchProduct(productId) {
+      const p = products.find(i => i.id === productId);
+      if (p) {
+        addToCart(p);
+        document.getElementById('product-search-input').value = '';
+        document.getElementById('search-suggestions').classList.add('hidden');
+        showToast(`Added: ${p.name.substring(0, 20)}...`);
+      }
+    }
+
+    /* Complete Sale & Process */
+    function processCompleteSale() {
+      if (cart.length === 0) {
+        showToast('Cart is empty. Add products first!', 'error');
+        return;
+      }
+
+      const mobileInput = document.getElementById('checkout-mobile');
+      const mobile = mobileInput.value.trim();
+      if (!mobile || mobile.length < 10) {
+        showToast('Please enter a valid 10-digit customer mobile', 'error');
+        mobileInput.focus();
+        return;
+      }
+
+      const totals = recalculateBillingTotals();
+      const invoiceNumber = `INV-${Math.floor(100000 + Math.random() * 900000)}`;
+      const now = new Date();
+
+      // Deduct product inventory stock
+      cart.forEach(item => {
+        const prod = products.find(p => p.id === item.id);
+        if (prod) {
+          prod.stock = Math.max(0, prod.stock - item.qty);
+          updateProductStatusLabel(prod);
         }
       });
-    }
+      saveProductsToStorage();
 
-    function resetCart() {
+      const newInvoice = {
+        invoiceNo: invoiceNumber,
+        dateTime: now.toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' }),
+        timestamp: now.getTime(),
+        mobile: mobile,
+        type: currentInvoiceType,
+        b2bGstin: currentInvoiceType === 'B2B' ? document.getElementById('b2b-gstin').value : '',
+        b2bCompany: currentInvoiceType === 'B2B' ? document.getElementById('b2b-company').value : '',
+        paymentMode: document.getElementById('pay-mode').value,
+        items: JSON.parse(JSON.stringify(cart)),
+        taxable: totals.taxable,
+        cgst: totals.cgst,
+        sgst: totals.sgst,
+        discount: totals.discount,
+        grandTotal: totals.grandTotal,
+        staff: 'Arunkumar'
+      };
+
+      invoices.unshift(newInvoice);
+      saveInvoicesToStorage();
+
+      // Update Dashboard stats & History view
+      updateDashboardStats();
+      renderHistoryList();
+      renderProductTable();
+
+      // Show Receipt Modal
+      openReceiptModal(newInvoice);
+
+      // Reset cart & reset inputs
       cart = [];
-      document.getElementById('discount-input').value = 0;
+      document.getElementById('val-discount').value = 0;
+      document.getElementById('barcode-input').value = '';
       renderCart();
+
+      // Reset random next serial
+      document.getElementById('current-order-serial').innerText = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
+      showToast(`Sale recorded successfully! #${invoiceNumber}`, 'success');
     }
 
-    // Print Receipt
-    function processBill() {
-      if (cart.length === 0) {
-        alert("Cart is empty! Add products before billing.");
+    /* ----------------------------------------------------
+       Receipt Modal & Print Handler
+    ---------------------------------------------------- */
+    function openReceiptModal(inv) {
+      document.getElementById('rcpt-num').innerText = `#${inv.invoiceNo}`;
+      document.getElementById('rcpt-date').innerText = inv.dateTime;
+      document.getElementById('rcpt-phone').innerText = inv.mobile;
+      document.getElementById('rcpt-type').innerText = inv.type === 'B2B' ? 'B2B Tax Invoice' : 'B2C Retail Invoice';
+      document.getElementById('rcpt-paymode').innerText = inv.paymentMode;
+
+      // B2B specific
+      const b2bBox = document.getElementById('rcpt-b2b-info');
+      if (inv.type === 'B2B' && inv.b2bGstin) {
+        b2bBox.classList.remove('hidden');
+        document.getElementById('rcpt-b2b-company').innerText = inv.b2bCompany || 'B2B Customer';
+        document.getElementById('rcpt-b2b-gstin').innerText = inv.b2bGstin || '-';
+      } else {
+        b2bBox.classList.add('hidden');
+      }
+
+      // Items list
+      const itemsContainer = document.getElementById('rcpt-items-list');
+      itemsContainer.innerHTML = inv.items.map(i => `
+        <tr class="text-[11px]">
+          <td class="py-1">${i.name.length > 20 ? i.name.substring(0, 20) + '...' : i.name}</td>
+          <td class="py-1 text-center font-mono">${i.qty}</td>
+          <td class="py-1 text-right font-mono">₹${i.price.toFixed(2)}</td>
+          <td class="py-1 text-right font-mono font-semibold">₹${(i.qty * i.price).toFixed(2)}</td>
+        </tr>
+      `).join('');
+
+      document.getElementById('rcpt-taxable').innerText = `₹${inv.taxable.toFixed(2)}`;
+      document.getElementById('rcpt-cgst').innerText = `₹${inv.cgst.toFixed(2)}`;
+      document.getElementById('rcpt-sgst').innerText = `₹${inv.sgst.toFixed(2)}`;
+      document.getElementById('rcpt-discount').innerText = `-₹${inv.discount.toFixed(2)}`;
+      document.getElementById('rcpt-grand-total').innerText = `₹${inv.grandTotal.toFixed(2)}`;
+
+      document.getElementById('printable-receipt-modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeReceiptModal() {
+      document.getElementById('printable-receipt-modal').classList.add('hidden');
+    }
+
+    /* ----------------------------------------------------
+       Billing History Screen
+    ---------------------------------------------------- */
+    function renderHistoryList() {
+      const container = document.getElementById('history-container');
+      const search = (document.getElementById('history-search-input')?.value || '').toLowerCase().trim();
+
+      const filtered = invoices.filter(inv => 
+        inv.invoiceNo.toLowerCase().includes(search) || 
+        inv.mobile.includes(search)
+      );
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="py-16 text-center text-slate-400">
+            <i data-lucide="file-question" class="w-10 h-10 mx-auto mb-2 text-slate-300"></i>
+            <p class="text-sm font-medium">No tax invoices found.</p>
+            <p class="text-xs text-slate-400 mt-0.5">Bills completed at POS will automatically appear here</p>
+          </div>
+        `;
+        lucide.createIcons();
         return;
       }
 
-      const { subtotal, discount, tax, grandTotal } = calculateTotals();
-      
-      document.getElementById('rcpt-order').innerText = `ORD: #${Math.floor(1000 + Math.random() * 9000)}`;
-      document.getElementById('rcpt-date').innerText = new Date().toLocaleString();
-      document.getElementById('rcpt-sub').innerText = `₹${subtotal.toFixed(2)}`;
-      document.getElementById('rcpt-cgst').innerText = `₹${(tax / 2).toFixed(2)}`;
-      document.getElementById('rcpt-sgst').innerText = `₹${(tax / 2).toFixed(2)}`;
-      document.getElementById('rcpt-disc').innerText = `-₹${discount.toFixed(2)}`;
-      document.getElementById('rcpt-total').innerText = `₹${grandTotal.toFixed(2)}`;
-      document.getElementById('rcpt-mode').innerText = paymentMethod;
+      container.innerHTML = filtered.map(inv => `
+        <div class="p-4 hover:bg-slate-50 flex items-center justify-between transition text-xs">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-slate-900 font-mono text-sm">#${inv.invoiceNo}</span>
+              <span class="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-semibold text-slate-600">${inv.type}</span>
+              <span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-[10px] font-semibold">${inv.paymentMode}</span>
+            </div>
+            <div class="text-slate-500 text-[11px] flex items-center gap-3">
+              <span>Customer: <strong class="text-slate-700 font-mono">${inv.mobile}</strong></span>
+              <span>•</span>
+              <span>${inv.items.length} items (${inv.items.reduce((a,b)=>a+b.qty, 0)} units)</span>
+              <span>•</span>
+              <span>${inv.dateTime}</span>
+            </div>
+          </div>
 
-      const itemsContainer = document.getElementById('rcpt-items');
-      itemsContainer.innerHTML = '';
-      cart.forEach(item => {
-        const div = document.createElement('div');
-        div.className = "flex justify-between";
-        div.innerHTML = `
-          <span>${item.name.substring(0, 15)}</span>
-          <span>${item.qty} x ${item.price}</span>
-          <span>₹${(item.qty * item.price).toFixed(2)}</span>
-        `;
-        itemsContainer.appendChild(div);
-      });
+          <div class="flex items-center gap-4">
+            <div class="text-right">
+              <div class="text-base font-extrabold text-slate-900 font-mono">₹${inv.grandTotal.toFixed(2)}</div>
+              <div class="text-[10px] text-emerald-600 font-medium">Paid & Settled</div>
+            </div>
+            <button onclick="reprintInvoice('${inv.invoiceNo}')" class="px-3 py-1.5 border border-slate-300 hover:border-slate-400 rounded-lg text-slate-700 font-semibold text-xs flex items-center gap-1 shadow-sm">
+              <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+              <span>Reprint</span>
+            </button>
+          </div>
+        </div>
+      `).join('');
 
-      window.print();
+      lucide.createIcons();
     }
 
-    // Init
-    renderCatalog();
-    renderCart();
+    function reprintInvoice(invNo) {
+      const found = invoices.find(i => i.invoiceNo === invNo);
+      if (found) {
+        openReceiptModal(found);
+      }
+    }
+
+    /* ----------------------------------------------------
+       Products & Inventory Screen & Filtering
+    ---------------------------------------------------- */
+    function updateProductStatusLabel(p) {
+      if (p.stock <= 2) {
+        p.status = 'Critical';
+      } else if (p.stock <= 7) {
+        p.status = 'Low Stock';
+      } else {
+        p.status = 'In Stock';
+      }
+    }
+
+    function renderProductTable() {
+      const tbody = document.getElementById('products-table-body');
+      const searchTerm = (document.getElementById('products-search-term')?.value || '').toLowerCase().trim();
+      const filterCat = document.getElementById('filter-category')?.value || 'All';
+      const filterGst = document.getElementById('filter-gst')?.value || 'All';
+      const filterStatus = document.getElementById('filter-status')?.value || 'All';
+
+      let filtered = products.filter(p => {
+        const matchesSearch = p.name.toLowerCase().includes(searchTerm) || p.barcode.includes(searchTerm) || p.hsn.includes(searchTerm);
+        const matchesCat = filterCat === 'All' || p.category === filterCat;
+        const matchesGst = filterGst === 'All' || p.gst.toString() === filterGst;
+        const matchesStatus = filterStatus === 'All' || (filterStatus === 'In Stock' ? (p.status === 'In Stock' || p.status === 'Healthy') : p.status === filterStatus);
+
+        return matchesSearch && matchesCat && matchesGst && matchesStatus;
+      });
+
+      // Update counters matching Screenshot 4
+      const healthyCount = products.filter(p => p.status === 'In Stock' || p.status === 'Healthy').length;
+      const lowCount = products.filter(p => p.status === 'Low Stock').length;
+      const criticalCount = products.filter(p => p.status === 'Critical').length;
+
+      document.getElementById('stat-total-prods').innerText = products.length;
+      document.getElementById('stat-healthy-prods').innerText = healthyCount;
+      document.getElementById('stat-low-prods').innerText = lowCount;
+      document.getElementById('stat-critical-prods').innerText = criticalCount;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="py-12 text-center text-slate-400">
+              No products found matching your active filter criteria.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(p => {
+        // Status Badge Style
+        let statusBadge = '';
+        if (p.status === 'Critical') {
+          statusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-rose-50 text-rose-600 border border-rose-200">
+            <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Critical
+          </span>`;
+        } else if (p.status === 'Low Stock') {
+          statusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-600 border border-amber-200">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Low Stock
+          </span>`;
+        } else {
+          statusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-600 border border-emerald-200">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> In Stock
+          </span>`;
+        }
+
+        return `
+          <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+            <td class="py-3 px-4">
+              <div class="font-semibold text-slate-900 leading-snug">${p.name}</div>
+              <div class="text-[10px] text-slate-400 font-mono mt-0.5">SKU: ${p.id} • Barcode: ${p.barcode}</div>
+            </td>
+            <td class="py-3 px-4">
+              <span class="text-slate-700">${p.category}</span>
+              <span class="block text-[10px] text-slate-400 font-mono">HSN: ${p.hsn || '-'}</span>
+            </td>
+            <td class="py-3 px-4 text-right font-mono font-semibold text-slate-900">
+              ₹${p.price.toFixed(2)}
+            </td>
+            <td class="py-3 px-4 text-center">
+              <span class="font-mono text-slate-600">${p.gst}%</span>
+              <span class="block text-[9px] text-slate-400">GST</span>
+            </td>
+            <td class="py-3 px-4 text-center font-mono font-bold text-slate-800">
+              ${p.stock}
+            </td>
+            <td class="py-3 px-4 text-center">
+              ${statusBadge}
+            </td>
+            <td class="py-3 px-4 text-right">
+              <div class="flex items-center justify-end gap-1.5">
+                <button onclick="printBarcodeLabel('${p.id}')" title="Print Barcode Label" class="p-1 text-slate-400 hover:text-slate-700">
+                  <i data-lucide="barcode" class="w-4 h-4"></i>
+                </button>
+                <button onclick="editProduct('${p.id}')" title="Edit" class="p-1 text-slate-400 hover:text-blue-600">
+                  <i data-lucide="edit-3" class="w-4 h-4"></i>
+                </button>
+                <button onclick="deleteProduct('${p.id}')" title="Delete" class="p-1 text-slate-400 hover:text-rose-600">
+                  <i data-lucide="trash" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    /* Product Management Modals */
+    let editingProductId = null;
+
+    function openAddProductModal() {
+      editingProductId = null;
+      document.getElementById('product-modal-title').innerText = 'Add New Product';
+      document.getElementById('m-prod-name').value = '';
+      document.getElementById('m-prod-sku').value = `890${Math.floor(1000000000 + Math.random() * 9000000000)}`;
+      document.getElementById('m-prod-hsn').value = '33049910';
+      document.getElementById('m-prod-price').value = '';
+      document.getElementById('m-prod-stock').value = '20';
+      document.getElementById('modal-product').classList.remove('hidden');
+    }
+
+    function editProduct(id) {
+      const p = products.find(i => i.id === id);
+      if (!p) return;
+      editingProductId = id;
+      document.getElementById('product-modal-title').innerText = 'Edit Product Details';
+      document.getElementById('m-prod-name').value = p.name;
+      document.getElementById('m-prod-sku').value = p.barcode;
+      document.getElementById('m-prod-hsn').value = p.hsn;
+      document.getElementById('m-prod-price').value = p.price;
+      document.getElementById('m-prod-gst').value = p.gst;
+      document.getElementById('m-prod-stock').value = p.stock;
+      document.getElementById('m-prod-category').value = p.category;
+      document.getElementById('modal-product').classList.remove('hidden');
+    }
+
+    function saveProductModal() {
+      const name = document.getElementById('m-prod-name').value.trim();
+      const sku = document.getElementById('m-prod-sku').value.trim();
+      const hsn = document.getElementById('m-prod-hsn').value.trim();
+      const price = parseFloat(document.getElementById('m-prod-price').value) || 0;
+      const gst = parseInt(document.getElementById('m-prod-gst').value) || 18;
+      const stock = parseInt(document.getElementById('m-prod-stock').value) || 0;
+      const category = document.getElementById('m-prod-category').value;
+
+      if (!name || !sku) {
+        showToast('Please provide product title and barcode', 'error');
+        return;
+      }
+
+      if (editingProductId) {
+        const prod = products.find(p => p.id === editingProductId);
+        if (prod) {
+          prod.name = name;
+          prod.barcode = sku;
+          prod.hsn = hsn;
+          prod.price = price;
+          prod.gst = gst;
+          prod.stock = stock;
+          prod.category = category;
+          updateProductStatusLabel(prod);
+        }
+        showToast('Product updated successfully!');
+      } else {
+        const newProd = {
+          id: `SKU-${sku}`,
+          barcode: sku,
+          name: name,
+          category: category,
+          hsn: hsn,
+          price: price,
+          gst: gst,
+          stock: stock,
+          threshold: 5,
+          status: 'In Stock'
+        };
+        updateProductStatusLabel(newProd);
+        products.unshift(newProd);
+        showToast('New product added to inventory!');
+      }
+
+      saveProductsToStorage();
+      closeProductModal();
+      renderProductTable();
+      populateAdjustStockDropdown();
+      updateDashboardStats();
+    }
+
+    function closeProductModal() {
+      document.getElementById('modal-product').classList.add('hidden');
+    }
+
+    function deleteProduct(id) {
+      if (confirm('Are you sure you want to delete this product from inventory?')) {
+        products = products.filter(p => p.id !== id);
+        saveProductsToStorage();
+        renderProductTable();
+        populateAdjustStockDropdown();
+        updateDashboardStats();
+        showToast('Product removed from catalog', 'info');
+      }
+    }
+
+    function printBarcodeLabel(id) {
+      const p = products.find(i => i.id === id);
+      if (p) {
+        showToast(`Label queued for ${p.barcode} (Thermal 50x25mm)`, 'success');
+      }
+    }
+
+    /* Adjust Stock Modal */
+    function openAdjustStockModal() {
+      populateAdjustStockDropdown();
+      document.getElementById('adj-stock-delta').value = '';
+      document.getElementById('modal-adjust-stock').classList.remove('hidden');
+    }
+
+    function closeAdjustStockModal() {
+      document.getElementById('modal-adjust-stock').classList.add('hidden');
+    }
+
+    function populateAdjustStockDropdown() {
+      const sel = document.getElementById('adj-product-select');
+      if (!sel) return;
+      sel.innerHTML = products.map(p => `
+        <option value="${p.id}">${p.name.substring(0, 32)} (Stock: ${p.stock})</option>
+      `).join('');
+    }
+
+    function saveStockAdjustment() {
+      const prodId = document.getElementById('adj-product-select').value;
+      const delta = parseInt(document.getElementById('adj-stock-delta').value) || 0;
+      if (delta === 0) {
+        showToast('Please enter non-zero stock adjustment', 'error');
+        return;
+      }
+
+      const p = products.find(i => i.id === prodId);
+      if (p) {
+        p.stock = Math.max(0, p.stock + delta);
+        updateProductStatusLabel(p);
+        saveProductsToStorage();
+        renderProductTable();
+        closeAdjustStockModal();
+        showToast(`Stock updated! New level: ${p.stock}`, 'success');
+      }
+    }
+
+    /* CSV Export & Import */
+    function downloadCSVExport() {
+      const headers = ['barcode', 'name', 'category', 'hsn', 'price', 'gst_percent', 'stock', 'status'];
+      const rows = products.map(p => [
+        `"${p.barcode}"`,
+        `"${p.name.replace(/"/g, '""')}"`,
+        `"${p.category}"`,
+        `"${p.hsn}"`,
+        p.price,
+        p.gst,
+        p.stock,
+        `"${p.status}"`
+      ]);
+
+      const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `RSP_POS_Inventory_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('Inventory exported as CSV', 'success');
+    }
+
+    function downloadSampleCSV() {
+      const csv = `barcode,name,category,hsn,price,gst_percent,stock\n8901234567890,Rose Glow Hydrating Mist 100ml,Skincare,33049910,299,18,50\n8909876543210,Matte Liquid Lipstick Ruby Red,Cosmetics,33049920,499,18,25`;
+      const encodedUri = encodeURI('data:text/csv;charset=utf-8,' + csv);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `sample_products_template.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function triggerCSVFileInput() {
+      document.getElementById('csv-file-input').click();
+    }
+
+    function handleCSVFileSelected(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const text = e.target.result;
+        const lines = text.split('\n').filter(l => l.trim().length > 0);
+        if (lines.length <= 1) {
+          showToast('CSV is empty or missing data rows', 'error');
+          return;
+        }
+
+        let addedCount = 0;
+        // Parse CSV lines
+        for (let i = 1; i < lines.length; i++) {
+          const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+          if (cols.length >= 2) {
+            const barcode = cols[0];
+            const name = cols[1];
+            if (!barcode || !name) continue;
+
+            const existing = products.find(p => p.barcode === barcode);
+            if (!existing) {
+              const newP = {
+                id: `SKU-${barcode}`,
+                barcode: barcode,
+                name: name,
+                category: cols[2] || 'Uncategorized',
+                hsn: cols[3] || '33049910',
+                price: parseFloat(cols[4]) || 199.00,
+                gst: parseInt(cols[5]) || 18,
+                stock: parseInt(cols[6]) || 20,
+                threshold: 5,
+                status: 'In Stock'
+              };
+              updateProductStatusLabel(newP);
+              products.push(newP);
+              addedCount++;
+            }
+          }
+        }
+
+        saveProductsToStorage();
+        renderProductTable();
+        showToast(`Successfully imported ${addedCount} products from CSV!`, 'success');
+        switchTab('products');
+      };
+      reader.readAsText(file);
+    }
+
+    /* ----------------------------------------------------
+       Barcode Onboarding Module
+    ---------------------------------------------------- */
+    function switchOnboardSubTab(sub) {
+      const scanBtn = document.getElementById('subtab-scan-btn');
+      const csvBtn = document.getElementById('subtab-csv-btn');
+      const scanContent = document.getElementById('subtab-scan-content');
+      const csvContent = document.getElementById('subtab-csv-content');
+
+      if (sub === 'scan') {
+        scanBtn.className = "pb-2.5 px-3 text-xs font-semibold border-b-2 border-blue-600 text-blue-600 flex items-center gap-1.5";
+        csvBtn.className = "pb-2.5 px-3 text-xs font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-1.5";
+        scanContent.classList.remove('hidden');
+        csvContent.classList.add('hidden');
+      } else {
+        csvBtn.className = "pb-2.5 px-3 text-xs font-semibold border-b-2 border-blue-600 text-blue-600 flex items-center gap-1.5";
+        scanBtn.className = "pb-2.5 px-3 text-xs font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-1.5";
+        csvContent.classList.remove('hidden');
+        scanContent.classList.add('hidden');
+      }
+      lucide.createIcons();
+    }
+
+    function toggleCameraSimulation() {
+      cameraActive = !cameraActive;
+      const btnText = document.getElementById('camera-btn-text');
+      const inactiveView = document.getElementById('scanner-inactive-state');
+      const activeView = document.getElementById('scanner-active-state');
+
+      if (cameraActive) {
+        btnText.innerText = 'Stop Camera';
+        inactiveView.classList.add('hidden');
+        activeView.classList.remove('hidden');
+        showToast('Camera stream active. Point at barcode.', 'info');
+      } else {
+        btnText.innerText = 'Start Camera';
+        inactiveView.classList.remove('hidden');
+        activeView.classList.add('hidden');
+      }
+    }
+
+    function simulateScanBarcode(barcode) {
+      document.getElementById('onboard-manual-barcode').value = barcode;
+      onboardLookupBarcode();
+    }
+
+    function onboardLookupBarcode() {
+      const code = document.getElementById('onboard-manual-barcode').value.trim();
+      if (!code) {
+        showToast('Enter a barcode number first', 'error');
+        return;
+      }
+
+      // Add to session history
+      recordScanSession(code);
+
+      const existing = products.find(p => p.barcode === code);
+      if (existing) {
+        editProduct(existing.id);
+        showToast(`Existing Product found: ${existing.name}`, 'info');
+      } else {
+        // Open Add modal pre-populated
+        openAddProductModal();
+        document.getElementById('m-prod-sku').value = code;
+        showToast(`New barcode detected! Enter name & save.`, 'success');
+      }
+    }
+
+    function recordScanSession(barcode) {
+      const existingProduct = products.find(p => p.barcode === barcode);
+      const title = existingProduct ? existingProduct.name : 'Unregistered Product';
+
+      scanSessionHistory.unshift({
+        barcode,
+        title,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      });
+
+      const listContainer = document.getElementById('session-scan-list');
+      listContainer.innerHTML = scanSessionHistory.slice(0, 6).map(s => `
+        <div class="p-2 rounded bg-slate-50 border border-slate-100 flex items-center justify-between text-xs">
+          <div>
+            <div class="font-mono font-bold text-slate-800">${s.barcode}</div>
+            <div class="text-[10px] text-slate-500">${s.title}</div>
+          </div>
+          <span class="text-[10px] text-slate-400 font-mono">${s.time}</span>
+        </div>
+      `).join('');
+    }
+
+    /* ----------------------------------------------------
+       Dashboard Real-time Stats & Recent Activity
+    ---------------------------------------------------- */
+    function updateDashboardStats() {
+      // Calculate today's total sales
+      const now = new Date();
+      const todayDateStr = now.toLocaleDateString('en-IN');
+
+      const todayBills = invoices.filter(inv => {
+        const invDate = new Date(inv.timestamp).toLocaleDateString('en-IN');
+        return invDate === todayDateStr;
+      });
+
+      const totalSalesAmount = todayBills.reduce((acc, b) => acc + b.grandTotal, 0);
+
+      document.getElementById('dash-sales-today').innerText = `₹${totalSalesAmount.toFixed(2)}`;
+      document.getElementById('dash-bills-count').innerText = `${todayBills.length} bill${todayBills.length === 1 ? '' : 's'} generated today`;
+
+      // Render 3 recent sales preview on dashboard
+      const recentContainer = document.getElementById('dash-recent-list');
+      if (invoices.length === 0) {
+        recentContainer.innerHTML = `
+          <div class="py-4 text-center text-slate-400">No transactions recorded yet today. Click "Start POS Billing" to begin.</div>
+        `;
+      } else {
+        recentContainer.innerHTML = invoices.slice(0, 3).map(inv => `
+          <div class="py-2.5 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="font-mono font-bold text-slate-900">#${inv.invoiceNo}</span>
+              <span class="text-slate-400">•</span>
+              <span class="text-slate-600 font-mono">Customer: ${inv.mobile}</span>
+              <span class="text-slate-400">•</span>
+              <span class="text-slate-400 text-[11px]">${inv.dateTime}</span>
+            </div>
+            <div class="font-mono font-bold text-slate-900">₹${inv.grandTotal.toFixed(2)}</div>
+          </div>
+        `).join('');
+      }
+    }
+
+    /* ----------------------------------------------------
+       Authentication & Screen Toggle
+    ---------------------------------------------------- */
+    function handleLogout() {
+      document.getElementById('modal-login').classList.remove('hidden');
+    }
+
+    function performLogin() {
+      const email = document.getElementById('login-email').value;
+      document.getElementById('current-staff-name').innerText = email.split('@')[0] || 'Arunkumar';
+      document.getElementById('modal-login').classList.add('hidden');
+      showToast('Logged in successfully as Arunkumar', 'success');
+      switchTab('dashboard');
+    }
+
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    /* ----------------------------------------------------
+       Toast Notification Helper
+    ---------------------------------------------------- */
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      let bg = 'bg-slate-900 text-white';
+      let icon = 'check-circle';
+      if (type === 'error') {
+        bg = 'bg-rose-600 text-white';
+        icon = 'alert-circle';
+      } else if (type === 'info') {
+        bg = 'bg-blue-600 text-white';
+        icon = 'info';
+      }
+
+      toast.className = `${bg} px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2 text-xs font-semibold transform transition-all duration-300 translate-y-3 opacity-0`;
+      toast.innerHTML = `
+        <i data-lucide="${icon}" class="w-4 h-4 shrink-0"></i>
+        <span>${message}</span>
+      `;
+      container.appendChild(toast);
+      lucide.createIcons();
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-3', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-3');
+        setTimeout(() => toast.remove(), 300);
+      }, 2500);
+    }
+
+    // Initialize application on page load
+    window.onload = function() {
+      initApp();
+    };
   </script>
 </body>
 </html>
